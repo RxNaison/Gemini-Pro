@@ -83,19 +83,18 @@ fun GeminiViewer(
 
     GetPermissions(context)
 
-    RunClipboardManager(clipboardText, onCopied = { })
-
     val diagramPrefixes = getMermaidDiagramPrefixes()
-    if (diagramPrefixes.any { clipboardText.value.startsWith(it) }) {
-        LaunchedEffect(showDiagramButton) {
-            if (showDiagramButton) {
-                launch {
-                    delay(6500)
-                    showDiagramButton = false
-                }
+
+    RunClipboardManager(clipboardText, onCopied = {
+        if (diagramPrefixes.any { clipboardText.value.startsWith(it) }) {
+            scope.launch {
+                showDiagramButton = true
+                delay(6500)
+                showDiagramButton = false
             }
         }
-    }
+    })
+
 
     Column(
         modifier = Modifier
