@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<objectAnimator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="1000"
+    android:interpolator="@android:interpolator/fast_out_slow_in">
+
+    <propertyValuesHolder
+        android:propertyName="rotation"
+        android:valueType="floatType"
+        android:valueFrom="0.0"
+        android:valueTo="360.0"/>
+
+    <propertyValuesHolder
+        android:propertyName="scaleX"
+        android:valueType="floatType"
+        android:valueFrom="0.0"
+        android:valueTo="0.4"/>
+
+    <propertyValuesHolder
+        android:propertyName="scaleY"
+        android:valueType="floatType"
+        android:valueFrom="0.0"
+        android:valueTo="0.4"/>
+
+</objectAnimator>

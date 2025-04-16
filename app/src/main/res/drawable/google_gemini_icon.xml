@@ -1,0 +1,25 @@
+<vector xmlns:aapt="http://schemas.android.com/aapt" xmlns:android="http://schemas.android.com/apk/res/android" android:height="50dp" android:viewportHeight="16" android:viewportWidth="16" android:width="50dp">
+    <group
+        android:name="animationGroup"
+        android:pivotX="8"
+        android:pivotY="8">
+        <path android:pathData="M16,8.016A8.522,8.522 0,0 0,8.016 16h-0.032A8.521,8.521 0,0 0,0 8.016v-0.032A8.521,8.521 0,0 0,7.984 0h0.032A8.522,8.522 0,0 0,16 7.984v0.032z">
+
+            <aapt:attr name="android:fillColor">
+
+                <gradient android:centerX="1.588" android:centerY="6.503" android:gradientRadius="17.03" android:type="radial">
+
+                    <item android:color="#FF9168C0" android:offset="0.067"/>
+
+                    <item android:color="#FF5684D1" android:offset="0.343"/>
+
+                    <item android:color="#FF1BA1E3" android:offset="0.672"/>
+
+                </gradient>
+
+            </aapt:attr>
+
+        </path>
+    </group>
+    
+</vector>
