@@ -23,7 +23,6 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,7 +55,8 @@ fun GeminiViewer(
     isConnected: Boolean,
     context: Context,
     geminiViewModel: GeminiViewModel,
-    themePreferenceManager: ThemePreferenceManager
+    themePreferenceManager: ThemePreferenceManager,
+    modifier: Modifier = Modifier
 ) {
     val clipboardText = remember { mutableStateOf("") }
     var showDiagramButton by remember { mutableStateOf(false) }
@@ -120,9 +120,8 @@ fun GeminiViewer(
             filePathCallbackState,
             filePickerLauncher,
             isKeyBoardShown,
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
-                .statusBarsPadding()
                 .weight(1f)
                 .offset(y = if (pointerPositionDp > keyboardTopThreshold - 50.dp) -keyboardHeightDp else 0.dp)
                 .pointerInput(Unit) {
