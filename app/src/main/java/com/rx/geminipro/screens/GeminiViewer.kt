@@ -43,6 +43,7 @@ import com.rx.geminipro.components.RunClipboardManager
 import com.rx.geminipro.components.createDocumentLauncher
 import com.rx.geminipro.components.geminiHtmlViewer
 import com.rx.geminipro.components.getFilePickerLauncher
+import com.rx.geminipro.components.getMermaidDiagramPrefixes
 import com.rx.geminipro.utils.GetPermissions
 import com.rx.geminipro.utils.GoogleServices
 import com.rx.geminipro.utils.ThemePreferenceManager
@@ -84,7 +85,7 @@ fun GeminiViewer(
 
     RunClipboardManager(clipboardText, onCopied = { })
 
-    val diagramPrefixes = listOf("graph", "classDiagram", "sequenceDiagram")
+    val diagramPrefixes = getMermaidDiagramPrefixes()
     if (diagramPrefixes.any { clipboardText.value.startsWith(it) }) {
         LaunchedEffect(showDiagramButton) {
             if (showDiagramButton) {

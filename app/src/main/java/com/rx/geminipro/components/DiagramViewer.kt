@@ -70,3 +70,41 @@ fun generateHtmlWithMermaid(mermaidCode: String): String {
 </html>
     """.trimIndent()
 }
+
+fun getMermaidDiagramPrefixes(): List<String> {
+    // List based on common Mermaid diagram types
+    // See: https://mermaid.js.org/syntax/examples.html (and linked syntax pages)
+    return listOf(
+        // Core & Common Diagrams
+        "graph",           // Flowchart (often used with direction like TD, LR)
+        "flowchart",       // Flowchart (newer, explicit syntax)
+        "sequenceDiagram", // Sequence Diagram
+        "classDiagram",    // Class Diagram
+        "stateDiagram",    // State Diagram (v1 - still supported but v2 preferred)
+        "stateDiagram-v2", // State Diagram (v2 - preferred)
+        "erDiagram",       // Entity Relationship Diagram
+        "journey",         // User Journey Diagram
+        "gantt",           // Gantt Chart
+        "pie",             // Pie Chart
+        "requirementDiagram", // Requirement Diagram (Req Diagram)
+        "gitGraph",        // Git Graph (Git Diagram)
+        "mindmap",         // Mind Map
+        "timeline",        // Timeline Diagram
+        "quadrantChart",   // Quadrant Chart
+
+        // C4 Model Diagrams (Context, Container, Component, Dynamic, Deployment)
+        "C4Context",
+        "C4Container",
+        "C4Component",
+        "C4Dynamic",
+        "C4Deployment",
+
+        // Diagrams often marked as Beta (as of early 2025)
+        "xychart-beta",    // XY Chart
+        "block-beta",      // Block Diagram
+        "sankey-beta"      // Sankey Diagram
+
+        // Note: There might be other less common types or
+        // experimental features depending on the Mermaid version.
+    )
+}
