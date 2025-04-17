@@ -1,11 +1,8 @@
 package com.rx.geminipro
 
-import android.animation.AnimatorSet
-import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
-import android.view.animation.OvershootInterpolator
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,9 +14,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.core.animation.doOnEnd
-import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.core.view.doOnPreDraw
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rx.geminipro.screens.GeminiViewModel
@@ -36,40 +30,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val geminiViewModel by viewModels<GeminiViewModel>()
-
-        installSplashScreen().apply {
-            setKeepOnScreenCondition{
-                !geminiViewModel.isReady.value
-            }
-            setOnExitAnimationListener{ screen->
-                val zoomX = ObjectAnimator.ofFloat(
-                    screen.iconView,
-                    View.SCALE_X,
-                    0.4f,
-                    0.0f
-                ).apply {
-                    interpolator = OvershootInterpolator()
-                    duration = 500L
-                }
-
-                val zoomY = ObjectAnimator.ofFloat(
-                    screen.iconView,
-                    View.SCALE_Y,
-                    0.4f,
-                    0.0f
-                ).apply {
-                    interpolator = OvershootInterpolator()
-                    duration = 500L
-                }
-
-                val animatorSet = AnimatorSet().apply {
-                    playTogether(zoomX, zoomY)
-                    doOnEnd { screen.remove() }
-                }
-
-                animatorSet.start()
-            }
-        }
         enableEdgeToEdge()
 
         setContent {

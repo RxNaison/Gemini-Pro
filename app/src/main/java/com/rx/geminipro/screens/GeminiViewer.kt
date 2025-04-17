@@ -228,9 +228,9 @@ fun GeminiViewer(
                             geminiViewModel.KeepScreenOnSwitch()
 
                             if(geminiViewModel.keepScreenOn.value)
-                                Toast.makeText(context, "Caffeine was turned on", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Caffeine is turned on", Toast.LENGTH_SHORT).show()
                             else
-                                Toast.makeText(context, "Caffeine was turned off", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Caffeine is turned off", Toast.LENGTH_SHORT).show()
                         }
                     },
                     {
