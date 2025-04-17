@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rx.geminipro.screens.GeminiViewModel
@@ -30,6 +31,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val geminiViewModel by viewModels<GeminiViewModel>()
+
+        installSplashScreen().apply {
+            setKeepOnScreenCondition {
+                !geminiViewModel.isReady.value
+            }
+            setOnExitAnimationListener { screen ->
+                screen.remove()
+            }
+        }
+
         enableEdgeToEdge()
 
         setContent {
