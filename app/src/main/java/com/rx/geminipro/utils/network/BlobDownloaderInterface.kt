@@ -42,19 +42,17 @@ class BlobDownloaderInterface(private val context: Context) {
         ioScope.launch {
             try {
                 Log.d("BlobDownloader", "Received blob data. MimeType: $mimeType, FilenameHint: $filenameHint")
-                // Remove the "data:mime/type;base64," prefix if present
                 val pureBase64 = base64Data.substringAfter("base64,")
                 val fileData = Base64.decode(pureBase64, Base64.DEFAULT)
 
                 val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
                 val defaultName = "download_${System.currentTimeMillis()}"
                 val finalFilename = when {
-                    filenameHint != null && filenameHint.contains('.') -> filenameHint // Use hint if it seems complete
-                    filenameHint != null -> "$filenameHint.$extension" // Add extension to hint
-                    else -> "$defaultName.$extension" // Generate default name
+                    filenameHint != null && filenameHint.contains('.') -> filenameHint
+                    filenameHint != null -> "$filenameHint.$extension"
+                    else -> "$defaultName.$extension"
                 }
 
-                // Use MediaStore for Android Q+ ideally, but Downloads directory for simplicity here
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 if (!downloadsDir.exists()) {
                     downloadsDir.mkdirs()
@@ -89,21 +87,19 @@ class BlobDownloaderInterface(private val context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "blob_downloads"
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(channel)
-        }
+        val channel = NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_HIGH)
+        notificationManager.createNotificationChannel(channel)
 
         val fileUri: Uri = try {
             FileProvider.getUriForFile(
                 context,
-                "${context.packageName}.provider", // Make sure this matches AndroidManifest provider authority
+                "${context.packageName}.provider",
                 file
             )
         } catch (e: IllegalArgumentException) {
             Log.e("BlobDownloader", "FileProvider error: ${e.message}")
             showToast("Error creating file URI for notification")
-            return // Cant proceed without a valid URI
+            return
         }
 
 
@@ -112,25 +108,18 @@ class BlobDownloaderInterface(private val context: Context) {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
         }
 
-        // Check if there's an activity that can handle this intent
         if (intent.resolveActivity(context.packageManager) == null) {
             Log.w("BlobDownloader", "No activity found to handle VIEW intent for type $mimeType")
-            // Fallback: Maybe just open Download Manager or show a generic notification?
-            // For now, just log it. The notification won't open anything specific.
             showToast("No app found to open ${file.name}")
-            // You might want to create a generic intent here or just skip the contentIntent
         }
 
 
-        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val pendingIntentFlags =
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        } else {
-            PendingIntent.FLAG_UPDATE_CURRENT
-        }
         val pendingIntent = PendingIntent.getActivity(context, 0, intent, pendingIntentFlags)
 
         val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Use your app's icon
+            .setSmallIcon(R.drawable.google_gemini_icon)
             .setContentTitle("Download complete")
             .setContentText(file.name)
             .setContentIntent(pendingIntent)
@@ -138,21 +127,17 @@ class BlobDownloaderInterface(private val context: Context) {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
 
-        // Use a unique ID for each notification based on file path or timestamp
         val notificationId = System.currentTimeMillis().toInt()
         notificationManager.notify(notificationId, notification)
     }
 
 
     companion object {
-        // Generates the JavaScript code to fetch the blob, convert to base64, and call back
         fun getBase64StringFromBlobUrl(blobUrl: String, mimeType: String?, filenameHint: String?): String {
-            // Escape potential problematic characters in parameters for JS string literals
             val safeMimeType = mimeType?.replace("'", "\\'") ?: ""
             val safeFilenameHint = filenameHint?.replace("'", "\\'") ?: ""
-            val safeBlobUrl = blobUrl.replace("'", "\\'") // Basic escaping
+            val safeBlobUrl = blobUrl.replace("'", "\\'")
 
-            // Note: The JS interface name is 'AndroidBlobHandler' here
             return """
             javascript:(function() {
                 var xhr = new XMLHttpRequest();
