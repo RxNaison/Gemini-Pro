@@ -2,6 +2,7 @@ package com.rx.geminipro.utils.permissions
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -16,11 +17,18 @@ import androidx.core.content.ContextCompat
 @Composable
 fun GetPermissions(context: Context)
 {
-    val requiredPermissions = arrayOf(
+    val basePermissions = mutableListOf(
         android.Manifest.permission.CAMERA,
         android.Manifest.permission.MODIFY_AUDIO_SETTINGS,
         android.Manifest.permission.RECORD_AUDIO
     )
+
+    // Add notification permission for Android 13+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        basePermissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
+
+    val requiredPermissions = basePermissions.toTypedArray()
 
     var permissionsGranted by remember { mutableStateOf(false) }
 
