@@ -1,4 +1,4 @@
-package com.rx.geminipro.components
+package com.rx.geminipro.utils.file
 
 import android.app.Activity
 import android.content.Intent

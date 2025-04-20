@@ -1,19 +1,14 @@
 package com.rx.geminipro.components
 
-import android.app.DownloadManager
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.PermissionRequest
-import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.MaterialTheme
@@ -22,11 +17,8 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebViewFeature
 
 @Composable
 fun geminiHtmlViewer(
@@ -135,7 +127,7 @@ fun geminiHtmlViewer(
                 }
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.setSupportZoom(true)
+                settings.setSupportZoom(false)
                 settings.mediaPlaybackRequiresUserGesture = false
                 settings.cacheMode = WebSettings.LOAD_DEFAULT
                 settings.allowFileAccess = true

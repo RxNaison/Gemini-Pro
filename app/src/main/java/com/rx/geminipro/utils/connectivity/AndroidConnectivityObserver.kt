@@ -1,4 +1,4 @@
-package com.rx.geminipro.utils
+package com.rx.geminipro.utils.connectivity
 
 import android.content.Context
 import android.net.ConnectivityManager

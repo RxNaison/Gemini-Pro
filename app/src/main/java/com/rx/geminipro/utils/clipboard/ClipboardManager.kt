@@ -1,4 +1,4 @@
-package com.rx.geminipro.components
+package com.rx.geminipro.utils.clipboard
 
 import android.content.ClipboardManager
 import android.content.Context

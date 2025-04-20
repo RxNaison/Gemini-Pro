@@ -1,4 +1,4 @@
-package com.rx.geminipro.utils
+package com.rx.geminipro.utils.connectivity
 
 import kotlinx.coroutines.flow.Flow
 

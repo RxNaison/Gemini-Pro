@@ -19,12 +19,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rx.geminipro.screens.GeminiViewModel
 import com.rx.geminipro.ui.theme.GeminiProTheme
-import com.rx.geminipro.utils.AndroidConnectivityObserver
-import com.rx.geminipro.utils.ConnectivityViewModel
+import com.rx.geminipro.utils.connectivity.AndroidConnectivityObserver
+import com.rx.geminipro.utils.connectivity.ConnectivityViewModel
 import com.rx.geminipro.screens.GeminiViewer
-import com.rx.geminipro.utils.NavigationMode
-import com.rx.geminipro.utils.ThemePreferenceManager
-import com.rx.geminipro.utils.getSystemNavigationMode
+import com.rx.geminipro.utils.navigation.NavigationMode
+import com.rx.geminipro.utils.theme.ThemePreferenceManager
+import com.rx.geminipro.utils.navigation.getSystemNavigationMode
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -1,4 +1,4 @@
-package com.rx.geminipro.utils
+package com.rx.geminipro.utils.theme
 
 import android.content.Context
 import androidx.datastore.core.DataStore

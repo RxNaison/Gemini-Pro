@@ -1,4 +1,4 @@
-package com.rx.geminipro.utils
+package com.rx.geminipro.utils.connectivity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

@@ -1,6 +1,5 @@
-package com.rx.geminipro.utils
+package com.rx.geminipro.utils.navigation
 
-import android.content.Context
 import android.view.View
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
