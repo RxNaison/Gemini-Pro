@@ -10,10 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "com.rx.geminipro"
-        minSdk = 28
+        minSdk = 24
         targetSdk = 35
         versionCode = 138
-        versionName = "1.4.3"
+        versionName = "1.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
