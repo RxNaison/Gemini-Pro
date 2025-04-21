@@ -7,11 +7,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -23,7 +21,6 @@ import com.rx.geminipro.utils.connectivity.AndroidConnectivityObserver
 import com.rx.geminipro.utils.connectivity.ConnectivityViewModel
 import com.rx.geminipro.screens.GeminiViewer
 import com.rx.geminipro.utils.navigation.NavigationMode
-import com.rx.geminipro.utils.theme.ThemePreferenceManager
 import com.rx.geminipro.utils.navigation.getSystemNavigationMode
 
 class MainActivity : ComponentActivity() {

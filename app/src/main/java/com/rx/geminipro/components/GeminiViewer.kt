@@ -69,7 +69,7 @@ fun geminiHtmlViewer(
                             val request = DownloadManager.Request(Uri.parse(url)).apply {
                                 setMimeType(mimeType)
                                 addRequestHeader("User-Agent", userAgent)
-                                addRequestHeader("Cookie", android.webkit.CookieManager.getInstance().getCookie(url));
+                                addRequestHeader("Cookie", android.webkit.CookieManager.getInstance().getCookie(url))
                                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                 val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
                                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
@@ -92,6 +92,7 @@ fun geminiHtmlViewer(
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 webViewClient = object : WebViewClient() {
+                    @Deprecated("Deprecated in Java")
                     override fun shouldOverrideUrlLoading(
                         view: WebView,
                         url: String

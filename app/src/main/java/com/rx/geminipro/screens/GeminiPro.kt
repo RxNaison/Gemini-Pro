@@ -45,9 +45,7 @@ import com.rx.geminipro.utils.file.getFilePickerLauncher
 import com.rx.geminipro.components.getMermaidDiagramPrefixes
 import com.rx.geminipro.utils.permissions.GetPermissions
 import com.rx.geminipro.utils.services.GoogleServices
-import com.rx.geminipro.utils.theme.ThemePreferenceManager
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
