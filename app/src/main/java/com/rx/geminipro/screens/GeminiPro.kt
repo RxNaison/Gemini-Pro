@@ -48,6 +48,8 @@ import com.rx.geminipro.utils.services.GoogleServices
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+private enum class ActiveWebView { TOP, BOTTOM }
+
 @Composable
 fun GeminiViewer(
     isConnected: Boolean,
@@ -60,7 +62,6 @@ fun GeminiViewer(
     var showDiagram by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    var splitScreen by remember { mutableStateOf(false) }
     var openAdditionalMenu by remember {mutableStateOf(false)}
 
     val filePathCallbackState = remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
@@ -76,7 +77,14 @@ fun GeminiViewer(
 
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
 
+    var lastTouchedWebView by remember { mutableStateOf(ActiveWebView.BOTTOM) }
+
     val keyboardTopThreshold = screenHeightDp - keyboardHeightDp
+    val keyboardOffset = if (pointerPositionDp > keyboardTopThreshold - 50.dp ||
+        geminiViewModel.splitScreen.value &&
+        lastTouchedWebView == ActiveWebView.BOTTOM) -keyboardHeightDp else 0.dp
+
+
 
     GetPermissions(context)
 
@@ -99,18 +107,26 @@ fun GeminiViewer(
             .background(MaterialTheme.colorScheme.background)
     ) {
 
-        if(splitScreen)
-        {
+        if (geminiViewModel.splitScreen.value) {
             geminiHtmlViewer(
                 filePathCallbackState,
                 filePickerLauncher,
                 isKeyBoardShown,
                 modifier = Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
                     .weight(1f)
+                    .pointerInput(Unit) {
+                        while (true) {
+                            awaitPointerEventScope {
+                                val event = awaitPointerEvent()
+                                if (event.changes.any { it.pressed && !it.previousPressed }) {
+                                    lastTouchedWebView = ActiveWebView.TOP
+                                }
+                            }
+                        }
+                    }
+                    .statusBarsPadding()
             )
-
         }
 
         geminiViewModel.webViewState = geminiHtmlViewer(
@@ -120,7 +136,7 @@ fun GeminiViewer(
             modifier = modifier
                 .fillMaxSize()
                 .weight(1f)
-                .offset(y = if (pointerPositionDp > keyboardTopThreshold - 50.dp) -keyboardHeightDp else 0.dp)
+                .offset(y = keyboardOffset)
                 .pointerInput(Unit) {
                     while (true) {
                         awaitPointerEventScope {
@@ -130,6 +146,9 @@ fun GeminiViewer(
                                 ?.let { change ->
                                     pointerPosition = change.position
                                 }
+                            if (event.changes.any { it.pressed && !it.previousPressed }) {
+                                lastTouchedWebView = ActiveWebView.BOTTOM
+                            }
                         }
                     }
                 }
@@ -234,7 +253,9 @@ fun GeminiViewer(
                         AdditionalMenuItem(
                             painterResource(id = R.drawable.split_screen),
                             "Split Screen"
-                        ){ splitScreen = !splitScreen }
+                        ){
+                            geminiViewModel.splitScreen.value = !geminiViewModel.splitScreen.value
+                        }
                     },
                     {
                         AdditionalMenuItem(

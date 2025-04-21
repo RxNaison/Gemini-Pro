@@ -60,11 +60,22 @@ class MainActivity : ComponentActivity() {
                 val navMode = getSystemNavigationMode(rootView)
 
                 if(navMode == NavigationMode.GESTURAL)
-                    GeminiViewer(isConnected, applicationContext, geminiViewModel, Modifier.statusBarsPadding())
+                {
+                    GeminiViewer(
+                        isConnected,
+                        applicationContext,
+                        geminiViewModel,
+                        Modifier.then(if (!geminiViewModel.splitScreen.value) Modifier.statusBarsPadding() else Modifier))
+                }
                 else
+                {
                     Scaffold { innerPadding ->
-                        GeminiViewer(isConnected, applicationContext, geminiViewModel, Modifier.padding(innerPadding))
+                        GeminiViewer(isConnected,
+                            applicationContext,
+                            geminiViewModel,
+                            Modifier.padding(innerPadding))
                     }
+                }
             }
         }
     }
