@@ -23,10 +23,10 @@ fun GetPermissions(context: Context)
         android.Manifest.permission.RECORD_AUDIO
     )
 
-    // Add notification permission for Android 13+
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        basePermissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
-    }
+    //no need yet
+//    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+//        basePermissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
+//    }
 
     val requiredPermissions = basePermissions.toTypedArray()
 

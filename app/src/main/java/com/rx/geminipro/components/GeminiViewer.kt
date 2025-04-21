@@ -4,6 +4,7 @@ import android.annotation.SuppressLint // Add this import
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
 import android.view.ViewGroup
@@ -11,6 +12,8 @@ import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceError
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -20,17 +23,18 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.webkit.WebSettingsCompat
-import androidx.webkit.WebViewFeature
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
+import com.rx.geminipro.utils.network.WebAppInterface
+import java.lang.ref.WeakReference
 
-@SuppressLint("SetJavaScriptEnabled") // Add SuppressLint for JavaScript
+@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun geminiHtmlViewer(
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
@@ -41,6 +45,10 @@ fun geminiHtmlViewer(
 ): MutableState<WebView?> {
     val background = MaterialTheme.colorScheme.background
     val webViewState = remember { mutableStateOf<WebView?>(null) }
+
+    var lastFailedExternalUrl by remember { mutableStateOf<String?>(null) }
+    val initialUrl = "https://aistudio.google.com"
+    val errorUrl = "file:///android_asset/webview_error.html" // Define error page URL
 
     AndroidView(
         modifier = modifier,
@@ -120,9 +128,46 @@ fun geminiHtmlViewer(
                         }
                     }
 
+                    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                        super.onPageStarted(view, url, favicon)
+                        if (url != errorUrl) {
+                            lastFailedExternalUrl = null
+                        }
+                    }
+
                     override fun onPageFinished(view: WebView, url: String) {
                         super.onPageFinished(view, url)
                         postTransition()
+
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView?,
+                        request: WebResourceRequest?,
+                        error: WebResourceError?
+                    ) {
+                        super.onReceivedError(view, request, error)
+                        if (request?.isForMainFrame == true && request.url.toString() != errorUrl) {
+                            val failingUrl = request.url.toString()
+                            println("WebView Error: ${error?.errorCode} - ${error?.description} for $failingUrl")
+                            lastFailedExternalUrl = failingUrl
+                            view?.loadUrl(errorUrl)
+                        }
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onReceivedError(
+                        view: WebView?,
+                        errorCode: Int,
+                        description: String?,
+                        failingUrl: String?
+                    ) {
+                        super.onReceivedError(view, errorCode, description, failingUrl)
+                        if (failingUrl != null && failingUrl == view?.url && failingUrl != errorUrl) {
+                            println("WebView Error (Deprecated): $errorCode - $description for $failingUrl")
+                            lastFailedExternalUrl = failingUrl
+                            view.loadUrl(errorUrl)
+                        }
                     }
                 }
                 webChromeClient = object : WebChromeClient() {
@@ -162,6 +207,14 @@ fun geminiHtmlViewer(
                 settings.allowFileAccessFromFileURLs = true
 
                 settings.javaScriptCanOpenWindowsAutomatically = true
+
+                addJavascriptInterface(
+                    WebAppInterface(
+                        webViewRef = WeakReference(this),
+                        getRetryUrl = { lastFailedExternalUrl ?: initialUrl }
+                    ),
+                    "Android"
+                )
 
                 loadUrl("https://aistudio.google.com")
 

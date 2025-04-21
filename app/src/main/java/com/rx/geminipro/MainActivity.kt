@@ -44,11 +44,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val isSystemDark = isSystemInDarkTheme()
-            val themePreferenceManager = ThemePreferenceManager(this)
-            val isDarkTheme by themePreferenceManager.themePreferenceFlow.collectAsState(initial = isSystemDark)
-
-            GeminiProTheme(darkTheme = isDarkTheme) {
+            GeminiProTheme(darkTheme = true) {
                 val connectivityViewModel = viewModel<ConnectivityViewModel> {
                     ConnectivityViewModel(
                         connectivityObserver = AndroidConnectivityObserver(
@@ -67,10 +63,10 @@ class MainActivity : ComponentActivity() {
                 val navMode = getSystemNavigationMode(rootView)
 
                 if(navMode == NavigationMode.GESTURAL)
-                    GeminiViewer(isConnected, applicationContext, geminiViewModel, themePreferenceManager, Modifier.statusBarsPadding())
+                    GeminiViewer(isConnected, applicationContext, geminiViewModel, Modifier.statusBarsPadding())
                 else
                     Scaffold { innerPadding ->
-                        GeminiViewer(isConnected, applicationContext, geminiViewModel, themePreferenceManager, Modifier.padding(innerPadding))
+                        GeminiViewer(isConnected, applicationContext, geminiViewModel, Modifier.padding(innerPadding))
                     }
             }
         }

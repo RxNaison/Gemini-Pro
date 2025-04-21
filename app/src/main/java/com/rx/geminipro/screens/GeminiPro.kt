@@ -55,7 +55,6 @@ fun GeminiViewer(
     isConnected: Boolean,
     context: Context,
     geminiViewModel: GeminiViewModel,
-    themePreferenceManager: ThemePreferenceManager,
     modifier: Modifier = Modifier
 ) {
     val clipboardText = remember { mutableStateOf("") }
@@ -222,7 +221,7 @@ fun GeminiViewer(
                     },
                     {
                         AdditionalMenuItem(
-                            painterResource(id = R.drawable.ic_launcher_foreground),
+                            painterResource(id = R.drawable.coffee_cup),
                             "Caffeine"
                         ){
                             geminiViewModel.KeepScreenOnSwitch()
@@ -241,16 +240,7 @@ fun GeminiViewer(
                     },
                     {
                         AdditionalMenuItem(
-                            painterResource(id = R.drawable.ic_launcher_foreground), "Change Theme"
-                        ) {
-                            scope.launch {
-                                themePreferenceManager.saveThemePreference(!themePreferenceManager.themePreferenceFlow.first())
-                            }
-                        }
-                    },
-                    {
-                        AdditionalMenuItem(
-                            painterResource(id = R.drawable.ic_launcher_foreground),
+                            painterResource(id = R.drawable.note_text),
                             "Save To File"
                         ){ documentLauncher.launch("myFile.txt") }
                     }
