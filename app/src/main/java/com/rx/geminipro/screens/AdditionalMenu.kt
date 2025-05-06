@@ -1,5 +1,6 @@
 package com.rx.geminipro.screens
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -27,7 +29,10 @@ fun AdditionalMenu(onClose: () -> Unit, items: List<@Composable () -> Unit>)
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.background,
         onDismissRequest = onClose,
-        windowInsets = WindowInsets(0, 0, 0, 0)
+        windowInsets = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                            WindowInsets(0, 0, 0, 0)
+                       else
+                            BottomSheetDefaults.windowInsets
     ) {
         Column(modifier = Modifier.navigationBarsPadding()) {
             FlowRow(

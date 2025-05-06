@@ -2,6 +2,7 @@ package com.rx.geminipro.screens
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.webkit.ValueCallback
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -62,7 +63,7 @@ fun GeminiViewer(
     var showDiagram by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    var openAdditionalMenu by remember {mutableStateOf(false)}
+    var openAdditionalMenu by remember { mutableStateOf(false) }
 
     val filePathCallbackState = remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val filePickerLauncher = getFilePickerLauncher(filePathCallbackState)
@@ -82,7 +83,8 @@ fun GeminiViewer(
     val keyboardTopThreshold = screenHeightDp - keyboardHeightDp
     val keyboardOffset = if (pointerPositionDp > keyboardTopThreshold - 50.dp ||
         geminiViewModel.splitScreen.value &&
-        lastTouchedWebView == ActiveWebView.BOTTOM) -keyboardHeightDp else 0.dp
+        lastTouchedWebView == ActiveWebView.BOTTOM
+    ) -keyboardHeightDp else 0.dp
 
 
 
@@ -203,8 +205,8 @@ fun GeminiViewer(
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
                         onVerticalDrag = { change, dragAmount ->
-                             if(dragAmount != 0f)
-                                 geminiViewModel.webViewState.value?.reload()
+                            if (dragAmount != 0f)
+                                geminiViewModel.webViewState.value?.reload()
                             change.consume()
                         }
                     )
@@ -226,42 +228,54 @@ fun GeminiViewer(
         )
         val documentLauncher = createDocumentLauncher(context, clipboardText.value)
         val googleServices = GoogleServices()
-        if(openAdditionalMenu)
+        if (openAdditionalMenu)
             AdditionalMenu(
-                {openAdditionalMenu = false},
+                { openAdditionalMenu = false },
                 listOf(
                     {
                         AdditionalMenuItem(
-                            painterResource(id = R.drawable.google_docs),
+                            painterResource(
+                                id = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                                    R.drawable.google_docs
+                                else
+                                    R.drawable.ic_launcher_foreground
+                            ),
                             "Open Docs"
-                        ){ googleServices.openGoogleDocs(context) }
+                        ) { googleServices.openGoogleDocs(context) }
                     },
                     {
                         AdditionalMenuItem(
                             painterResource(id = R.drawable.coffee_cup),
                             "Caffeine"
-                        ){
+                        ) {
                             geminiViewModel.KeepScreenOnSwitch()
 
-                            if(geminiViewModel.keepScreenOn.value)
-                                Toast.makeText(context, "Caffeine is turned on", Toast.LENGTH_SHORT).show()
+                            if (geminiViewModel.keepScreenOn.value)
+                                Toast.makeText(context, "Caffeine is turned on", Toast.LENGTH_SHORT)
+                                    .show()
                             else
-                                Toast.makeText(context, "Caffeine is turned off", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Caffeine is turned off",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                         }
                     },
                     {
                         AdditionalMenuItem(
                             painterResource(id = R.drawable.split_screen),
                             "Split Screen"
-                        ){
+                        ) {
                             geminiViewModel.splitScreen.value = !geminiViewModel.splitScreen.value
                         }
                     },
                     {
-                        AdditionalMenuItem(
-                            painterResource(id = R.drawable.note_text),
-                            "Save To File"
-                        ){ documentLauncher.launch("myFile.txt") }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            AdditionalMenuItem(
+                                painterResource(id = R.drawable.note_text),
+                                "Save To File"
+                            ) { documentLauncher.launch("myFile.txt") }
+                        }
                     }
                 )
             )

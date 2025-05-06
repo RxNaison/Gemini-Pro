@@ -1,6 +1,6 @@
 package com.rx.geminipro.components
 
-import android.annotation.SuppressLint // Add this import
+import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -48,7 +48,7 @@ fun geminiHtmlViewer(
 
     var lastFailedExternalUrl by remember { mutableStateOf<String?>(null) }
     val initialUrl = "https://aistudio.google.com"
-    val errorUrl = "file:///android_asset/webview_error.html" // Define error page URL
+    val errorUrl = "file:///android_asset/webview_error.html"
 
     AndroidView(
         modifier = modifier,
