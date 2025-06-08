@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.MimeTypeMap
 import android.webkit.PermissionRequest
@@ -19,7 +20,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
 import com.rx.geminipro.utils.network.WebAppInterface
@@ -51,6 +56,8 @@ fun geminiHtmlViewer(
     var lastFailedExternalUrl by remember { mutableStateOf<String?>(null) }
     val initialUrl = "https://aistudio.google.com"
     val errorUrl = "file:///android_asset/webview_error.html"
+
+    val activity = LocalContext.current as? ComponentActivity
 
     AndroidView(
         modifier = modifier,
@@ -219,6 +226,103 @@ fun geminiHtmlViewer(
                     }
                 }
                 webChromeClient = object : WebChromeClient() {
+
+                    private var customView: View? = null
+                    private var customViewCallback: CustomViewCallback? = null
+                    private var originalOrientation: Int = 0
+                    private var originalSystemUiVisibility: Int = 0
+                    private var fullscreenContainer: FrameLayout? = null
+                    private var onBackPressedCallback: OnBackPressedCallback? = null
+
+                    override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
+                        if (activity == null) {
+                            callback?.onCustomViewHidden()
+                            return
+                        }
+
+                        if (customView != null) {
+                            callback?.onCustomViewHidden()
+                            return
+                        }
+
+                        customView = view
+                        customViewCallback = callback
+                        originalSystemUiVisibility = activity.window.decorView.systemUiVisibility
+                        originalOrientation = activity.requestedOrientation
+
+                        if (fullscreenContainer == null) {
+                            fullscreenContainer = FrameLayout(activity).apply {
+                                layoutParams = FrameLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                                setBackgroundColor(android.graphics.Color.BLACK)
+                            }
+                        }
+
+                        val decorView = activity.window.decorView as ViewGroup
+                        decorView.addView(fullscreenContainer, ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT))
+                        fullscreenContainer?.addView(customView, ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT))
+
+                        customView?.visibility = View.VISIBLE
+                        fullscreenContainer?.visibility = View.VISIBLE
+                        this@apply.visibility = View.GONE // Hide original WebView
+
+                        activity.window.decorView.systemUiVisibility = (
+                                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                                )
+                        // Lock to landscape if desired, or let video decide
+                        // activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
+                        // Handle back press to exit fullscreen
+                        if (onBackPressedCallback == null) {
+                            onBackPressedCallback = object : OnBackPressedCallback(true) {
+                                override fun handleOnBackPressed() {
+                                    onHideCustomView()
+                                }
+                            }
+                        }
+                        onBackPressedCallback?.isEnabled = true
+                        activity.onBackPressedDispatcher.addCallback(activity, onBackPressedCallback!!)
+                        // geminiViewModel.setVideoFullscreen(true) // If you have such a state
+                    }
+
+                    override fun onHideCustomView() {
+                        if (activity == null || customView == null) {
+                            return
+                        }
+
+                        customView?.visibility = View.GONE
+                        fullscreenContainer?.removeView(customView)
+
+                        val decorView = activity.window.decorView as ViewGroup
+                        decorView.removeView(fullscreenContainer) // Remove the container itself
+                        fullscreenContainer?.visibility = View.GONE
+                        // fullscreenContainer = null; // Optional: can be nulled if you want to recreate it always
+
+                        customView = null // Release reference
+                        customViewCallback?.onCustomViewHidden()
+                        customViewCallback = null
+
+                        activity.window.decorView.systemUiVisibility = originalSystemUiVisibility
+                        activity.requestedOrientation = originalOrientation
+
+                        this@apply.visibility = View.VISIBLE // Show original WebView
+
+                        onBackPressedCallback?.isEnabled = false
+                        onBackPressedCallback?.remove() // Important: remove the callback
+                        // geminiViewModel.setVideoFullscreen(false) // If you have such a state
+                    }
+
                     override fun onShowFileChooser(
                         webView: WebView,
                         filePathCallback: ValueCallback<Array<Uri>>,
@@ -255,6 +359,9 @@ fun geminiHtmlViewer(
                 settings.allowFileAccessFromFileURLs = true
 
                 settings.javaScriptCanOpenWindowsAutomatically = true
+
+                settings.pluginState = WebSettings.PluginState.ON
+                settings.setSupportMultipleWindows(false)
 
                 addJavascriptInterface(
                     WebAppInterface(
