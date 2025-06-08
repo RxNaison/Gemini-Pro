@@ -7,7 +7,9 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
+import android.util.Log
 import android.view.ViewGroup
+import android.webkit.MimeTypeMap
 import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
@@ -64,6 +66,51 @@ fun geminiHtmlViewer(
                         val jsToRun = BlobDownloaderInterface.getBase64StringFromBlobUrl(url, mimeType, filename)
                         this.loadUrl(jsToRun)
                         Toast.makeText(context, "Preparing download...", Toast.LENGTH_SHORT).show()
+                    } else if (url != null && url.startsWith("data:")) {
+                        try {
+                            Toast.makeText(context, "Processing data URL...", Toast.LENGTH_SHORT).show()
+                            val commaIndex = url.indexOf(',')
+                            if (commaIndex == -1) {
+                                Toast.makeText(context, "Invalid data URL: missing comma", Toast.LENGTH_LONG).show()
+                                return@setDownloadListener
+                            }
+
+                            val header = url.substring(0, commaIndex)
+                            val base64EncodedData = url.substring(commaIndex + 1)
+
+                            var extractedMimeType = "application/octet-stream"
+                            val mimeAndEncodingPart = header.substringAfter("data:", missingDelimiterValue = "")
+                            if (mimeAndEncodingPart.isNotBlank()) {
+                                extractedMimeType = mimeAndEncodingPart.substringBefore(';', missingDelimiterValue = mimeAndEncodingPart).trim()
+                            }
+
+                            var fileExtension: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(extractedMimeType)
+
+                            if (fileExtension == null) {
+                                val slashIndex = extractedMimeType.lastIndexOf('/')
+                                if (slashIndex != -1 && slashIndex < extractedMimeType.length - 1) {
+                                    var subtype = extractedMimeType.substring(slashIndex + 1)
+                                    val plusIndex = subtype.indexOf('+')
+                                    if (plusIndex != -1) {
+                                        subtype = subtype.substring(0, plusIndex)
+                                    }
+                                    if (subtype.isNotBlank() && subtype.length <= 5 && subtype.all { it.isLetterOrDigit() }) {
+                                        fileExtension = subtype
+                                    }
+                                }
+                            }
+
+                            if (fileExtension.isNullOrBlank()) {
+                                fileExtension = "bin"
+                            }
+
+                            val filenameHint = "download_${System.currentTimeMillis()}.$fileExtension"
+
+                            BlobDownloaderInterface(context).processBlobData(base64EncodedData, extractedMimeType, filenameHint)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error processing data URL: ${e.message}", Toast.LENGTH_LONG).show()
+                            Log.e("DataUrlDownload", "Error processing data URL", e)
+                        }
                     } else if (url != null) {
                         try {
                             val request = DownloadManager.Request(Uri.parse(url)).apply {
