@@ -61,6 +61,10 @@ fun GeminiViewer(
     val clipboardText = remember { mutableStateOf("") }
     var showDiagramButton by remember { mutableStateOf(false) }
     var showDiagram by remember { mutableStateOf(false) }
+
+    var showHtmlPreviewButton by remember { mutableStateOf(false) }
+    var showHtmlPreviewScreen by remember { mutableStateOf(false) }
+
     val scope = rememberCoroutineScope()
 
     var openAdditionalMenu by remember { mutableStateOf(false) }
@@ -99,6 +103,17 @@ fun GeminiViewer(
                 delay(6500)
                 showDiagramButton = false
             }
+        } else if (clipboardText.value.lowercase().startsWith("<!doctype html") ||
+            clipboardText.value.lowercase().startsWith("<html>")
+        ) {
+            scope.launch {
+                showHtmlPreviewButton = true
+                delay(6500)
+                showHtmlPreviewButton = false
+            }
+        } else {
+            showDiagramButton = false
+            showHtmlPreviewButton = false
         }
     })
 
@@ -191,6 +206,42 @@ fun GeminiViewer(
             onClose = {
                 showDiagram = false
                 showDiagramButton = false
+            }
+        )
+
+        AnimatedVisibility(
+            visible = showHtmlPreviewButton,
+            enter = slideInVertically(initialOffsetY = { it }),
+            exit = slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Button(
+                modifier = Modifier
+                    .align(Alignment.End)
+                    .padding(16.dp),
+                onClick = {
+                    showHtmlPreviewScreen = true
+                    showHtmlPreviewButton = false
+                },
+                colors = ButtonColors(
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.secondary,
+                    MaterialTheme.colorScheme.primary,
+                    MaterialTheme.colorScheme.primary,
+                )
+            ) {
+                Text("Preview HTML")
+            }
+        }
+        HtmlPreviewScreen(
+            showHtmlPreview = showHtmlPreviewScreen,
+            htmlContent = clipboardText.value,
+            onBack = {
+                showHtmlPreviewScreen = false
+            },
+            onClose = {
+                showHtmlPreviewScreen = false
+                showHtmlPreviewButton = false
             }
         )
         NoConnectionScreen(isConnected)
