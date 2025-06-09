@@ -268,9 +268,7 @@ fun geminiHtmlViewer(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT))
 
-                        customView?.visibility = View.VISIBLE
                         fullscreenContainer?.visibility = View.VISIBLE
-                        this@apply.visibility = View.GONE // Hide original WebView
 
                         activity.window.decorView.systemUiVisibility = (
                                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -280,10 +278,8 @@ fun geminiHtmlViewer(
                                         or View.SYSTEM_UI_FLAG_FULLSCREEN
                                         or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                                 )
-                        // Lock to landscape if desired, or let video decide
-                        // activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-                        // Handle back press to exit fullscreen
+
                         if (onBackPressedCallback == null) {
                             onBackPressedCallback = object : OnBackPressedCallback(true) {
                                 override fun handleOnBackPressed() {
@@ -293,7 +289,6 @@ fun geminiHtmlViewer(
                         }
                         onBackPressedCallback?.isEnabled = true
                         activity.onBackPressedDispatcher.addCallback(activity, onBackPressedCallback!!)
-                        // geminiViewModel.setVideoFullscreen(true) // If you have such a state
                     }
 
                     override fun onHideCustomView() {
@@ -305,22 +300,20 @@ fun geminiHtmlViewer(
                         fullscreenContainer?.removeView(customView)
 
                         val decorView = activity.window.decorView as ViewGroup
-                        decorView.removeView(fullscreenContainer) // Remove the container itself
+                        decorView.removeView(fullscreenContainer)
                         fullscreenContainer?.visibility = View.GONE
-                        // fullscreenContainer = null; // Optional: can be nulled if you want to recreate it always
 
-                        customView = null // Release reference
+                        customView = null
                         customViewCallback?.onCustomViewHidden()
                         customViewCallback = null
 
                         activity.window.decorView.systemUiVisibility = originalSystemUiVisibility
                         activity.requestedOrientation = originalOrientation
 
-                        this@apply.visibility = View.VISIBLE // Show original WebView
+                        this@apply.visibility = View.VISIBLE
 
                         onBackPressedCallback?.isEnabled = false
-                        onBackPressedCallback?.remove() // Important: remove the callback
-                        // geminiViewModel.setVideoFullscreen(false) // If you have such a state
+                        onBackPressedCallback?.remove()
                     }
 
                     override fun onShowFileChooser(

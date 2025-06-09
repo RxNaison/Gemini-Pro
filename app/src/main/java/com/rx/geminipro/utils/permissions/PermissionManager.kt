@@ -14,6 +14,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 
+
+private const val PERMISSION_PREFS_NAME = "gemini_pro_permission_prefs"
+private const val KEY_DENIAL_TOAST_SHOWN_ONCE = "denial_toast_shown_once"
+
 @Composable
 fun GetPermissions(context: Context)
 {
@@ -27,27 +31,51 @@ fun GetPermissions(context: Context)
         basePermissions.add(android.Manifest.permission.POST_NOTIFICATIONS)
     }
 
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        basePermissions.add(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    }
+
     val requiredPermissions = basePermissions.toTypedArray()
 
-    var permissionsGranted by remember { mutableStateOf(false) }
+    var allPermissionsCurrentlyGranted by remember {
+        mutableStateOf(false)
+    }
+
+    val prefs = remember(context) {
+        context.getSharedPreferences(PERMISSION_PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        permissionsGranted = permissions.values.all { it }
-        if (!permissionsGranted) {
-            Toast.makeText(context, "You can change this in the settings later", Toast.LENGTH_SHORT)
-                .show()
+    ) { permissionsResult ->
+        val allPermissionsWereGrantedInThisDialog = permissionsResult.values.all { it }
+        allPermissionsCurrentlyGranted = allPermissionsWereGrantedInThisDialog
+
+        if (!allPermissionsWereGrantedInThisDialog) {
+            val toastAlreadyShownForDenialCycle = prefs.getBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, false)
+            if (!toastAlreadyShownForDenialCycle) {
+                Toast.makeText(context, "You haven't granted all the necessary permissions", Toast.LENGTH_SHORT).show()
+                prefs.edit().putBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, true).apply()
+            }
+        } else {
+            if (prefs.getBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, false)) {
+                prefs.edit().putBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, false).apply()
+            }
         }
     }
 
-    LaunchedEffect(key1 = true) {
-        permissionsGranted = requiredPermissions.all {
+    LaunchedEffect(key1 = Unit) {
+        val doWeCurrentlyHaveAllPermissions = requiredPermissions.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
+        allPermissionsCurrentlyGranted = doWeCurrentlyHaveAllPermissions
 
-        if (!permissionsGranted) {
+        if (!doWeCurrentlyHaveAllPermissions) {
             permissionLauncher.launch(requiredPermissions)
+        } else {
+            if (prefs.getBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, false)) {
+                prefs.edit().putBoolean(KEY_DENIAL_TOAST_SHOWN_ONCE, false).apply()
+            }
         }
     }
 }
