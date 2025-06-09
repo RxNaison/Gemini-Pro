@@ -110,7 +110,6 @@ class BlobDownloaderInterface(private val context: Context) {
 
         if (intent.resolveActivity(context.packageManager) == null) {
             Log.w("BlobDownloader", "No activity found to handle VIEW intent for type $mimeType")
-            showToast("No app found to open ${file.name}")
         }
 
 

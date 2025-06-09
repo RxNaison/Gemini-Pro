@@ -72,10 +72,10 @@ fun geminiHtmlViewer(
                         val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
                         val jsToRun = BlobDownloaderInterface.getBase64StringFromBlobUrl(url, mimeType, filename)
                         this.loadUrl(jsToRun)
-                        Toast.makeText(context, "Preparing download...", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Download is starting...", Toast.LENGTH_SHORT).show()
                     } else if (url != null && url.startsWith("data:")) {
                         try {
-                            Toast.makeText(context, "Processing data URL...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Download is starting...", Toast.LENGTH_SHORT).show()
                             val commaIndex = url.indexOf(',')
                             if (commaIndex == -1) {
                                 Toast.makeText(context, "Invalid data URL: missing comma", Toast.LENGTH_LONG).show()
