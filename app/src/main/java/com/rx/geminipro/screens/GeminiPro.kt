@@ -279,20 +279,17 @@ fun GeminiViewer(
         )
         val documentLauncher = createDocumentLauncher(context, clipboardText.value)
         val googleServices = GoogleServices()
-        if (openAdditionalMenu)
+        if (openAdditionalMenu) {
             AdditionalMenu(
                 { openAdditionalMenu = false },
                 listOf(
                     {
                         AdditionalMenuItem(
-                            painterResource(
-                                id = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                                    R.drawable.google_docs
-                                else
-                                    R.drawable.ic_launcher_foreground
-                            ),
+                            painterResource(id = R.drawable.google_docs),
                             "Open Docs"
-                        ) { googleServices.openGoogleDocs(context) }
+                        ) {
+                            googleServices.openGoogleDocs(context)
+                        }
                     },
                     {
                         AdditionalMenuItem(
@@ -321,15 +318,16 @@ fun GeminiViewer(
                         }
                     },
                     {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            AdditionalMenuItem(
-                                painterResource(id = R.drawable.note_text),
-                                "Save To File"
-                            ) { documentLauncher.launch("myFile.txt") }
+                        AdditionalMenuItem(
+                            painterResource(id = R.drawable.note_text),
+                            "Save To File"
+                        ) {
+                            documentLauncher.launch("myFile.txt")
                         }
                     }
                 )
             )
+        }
     }
 }
 

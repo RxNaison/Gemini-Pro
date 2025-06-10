@@ -5,7 +5,7 @@
     android:viewportHeight="490">
   <group
       android:name="drawing_group"
-      android:translateX="110"
+      android:translateX="70"
   android:translateY="70"
   >
     <path
