@@ -3,7 +3,10 @@
 Simple webview app that gives you a little bit more functionality
 
 # How to use
-<img src="https://github.com/user-attachments/assets/f3037666-4945-492f-b06a-65e9d7c96d1e" alt="Main screen" width="400">
+<img src="https://github.com/user-attachments/assets/f3037666-4945-492f-b06a-65e9d7c96d1e" alt="Main screen" width="250">
+<img src="https://github.com/user-attachments/assets/90a572b2-24c1-4cd0-b950-d7351c1e86a3" alt="Additional menu" width="250">
+<img src="https://github.com/user-attachments/assets/edeb14b6-dff6-4df1-98c5-0c9541475105" alt="Diagram demonstration" width="250">
+
 
 # Development Environment
 
