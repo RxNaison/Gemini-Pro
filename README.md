@@ -1,12 +1,26 @@
 # Gemini Pro
 
-Simple webview app that gives you a little bit more functionality
+A lightweight WebView-based application for accessing **Google AI Studio** with a few extra features to enhance your workflow.
 
 # How to use
 
-You need to give a permission to your google drive using chrome first, and then you can use the app.
+**1. Grant Google Drive permission**
 
-This is google security policy and i can't fix it. And also this security policy is the same reason downloads don't work in the app except for audio downloading, generated video you can save on your google drive.
+Open Chrome, go to [this webpage](https://aistudio.google.com/prompts/new_chat) and log into your Google account.
+
+Grant permission to Google Drive.
+
+**2. Launch Gemini Pro**
+
+Once permissions are set, you can start using the app immediately.
+
+
+> Note:
+This step is required due to Google’s security policy, which cannot be bypassed.
+The same policy also prevents certain downloads within the app, except for audio files.
+Generated videos can be saved directly to your Google Drive.
+
+# Screenshots
 
 <img src="https://github.com/user-attachments/assets/f3037666-4945-492f-b06a-65e9d7c96d1e" alt="Main screen" width="250">
 <img src="https://github.com/user-attachments/assets/90a572b2-24c1-4cd0-b950-d7351c1e86a3" alt="Additional menu" width="250">
