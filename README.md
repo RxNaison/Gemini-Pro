@@ -2,6 +2,14 @@
 
 A lightweight WebView-based application for accessing **Google AI Studio** with a few extra features to enhance your workflow.
 
+# Features
+
+* Instant diagram viewing when copying mermaid code
+* Instant HTML page viewing when copying generated HTML code
+* The ability to immediately save the copied text to a text file
+* **Caffeine mode** - does not allow the phone to turn off the screen
+* **Split Screen** - allows you to work in two dialog windows at once in parallel (an experimental function)
+
 # How to use
 
 **1. Grant Google Drive permission**
