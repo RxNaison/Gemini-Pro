@@ -139,6 +139,7 @@ fun GeminiViewer(
                                 val event = awaitPointerEvent()
                                 if (event.changes.any { it.pressed && !it.previousPressed }) {
                                     lastTouchedWebView = ActiveWebView.TOP
+                                    pointerPosition = Offset.Zero
                                 }
                             }
                         }
