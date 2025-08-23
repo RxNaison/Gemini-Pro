@@ -2,7 +2,6 @@ package com.rx.geminipro.screens
 
 import android.content.Context
 import android.net.Uri
-import android.os.Build
 import android.webkit.ValueCallback
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
@@ -85,11 +84,13 @@ fun GeminiViewer(
     var lastTouchedWebView by remember { mutableStateOf(ActiveWebView.BOTTOM) }
 
     val keyboardTopThreshold = screenHeightDp - keyboardHeightDp
-    val keyboardOffset = if (pointerPositionDp > keyboardTopThreshold - 50.dp ||
+    val thresholdInPx = with(density) { keyboardTopThreshold.toPx() }
+
+    val keyboardOffset = if (
+        pointerPositionDp > keyboardTopThreshold - 50.dp ||
         geminiViewModel.splitScreen.value &&
         lastTouchedWebView == ActiveWebView.BOTTOM
     ) -keyboardHeightDp else 0.dp
-
 
 
     GetPermissions(context)
@@ -170,6 +171,7 @@ fun GeminiViewer(
                     }
                 }
         ) {
+            pointerPosition = Offset(pointerPosition.x, thresholdInPx)
             geminiViewModel.Ready()
         }
 
@@ -299,8 +301,11 @@ fun GeminiViewer(
                             geminiViewModel.KeepScreenOnSwitch()
 
                             if (geminiViewModel.keepScreenOn.value)
-                                Toast.makeText(context, "Caffeine is turned on", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(
+                                    context,
+                                    "Caffeine is turned on",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             else
                                 Toast.makeText(
                                     context,
