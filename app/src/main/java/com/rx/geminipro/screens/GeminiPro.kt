@@ -1,9 +1,11 @@
 package com.rx.geminipro.screens
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -11,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.ime
@@ -23,6 +26,7 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +52,7 @@ import com.rx.geminipro.utils.services.GoogleServices
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private enum class ActiveWebView { TOP, BOTTOM }
+private enum class ActiveWebView { VIEW_ONE, VIEW_TWO }
 
 @Composable
 fun GeminiViewer(
@@ -81,16 +85,21 @@ fun GeminiViewer(
 
     val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
 
-    var lastTouchedWebView by remember { mutableStateOf(ActiveWebView.BOTTOM) }
+    var lastTouchedWebView by remember { mutableStateOf(ActiveWebView.VIEW_ONE) }
 
     val keyboardTopThreshold = screenHeightDp - keyboardHeightDp
-    val thresholdInPx = with(density) { keyboardTopThreshold.toPx() }
 
     val keyboardOffset = if (
         pointerPositionDp > keyboardTopThreshold - 50.dp ||
         geminiViewModel.splitScreen.value &&
-        lastTouchedWebView == ActiveWebView.BOTTOM
+        lastTouchedWebView == ActiveWebView.VIEW_ONE
     ) -keyboardHeightDp else 0.dp
+
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLargeScreen = configuration.screenWidthDp.dp > 600.dp
+
+    val useHorizontalLayout = geminiViewModel.splitScreen.value && (isLandscape || isLargeScreen)
 
 
     GetPermissions(context)
@@ -124,56 +133,76 @@ fun GeminiViewer(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+        val parentModifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
 
-        if (geminiViewModel.splitScreen.value) {
-            geminiHtmlViewer(
-                filePathCallbackState,
-                filePickerLauncher,
-                isKeyBoardShown,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f)
-                    .pointerInput(Unit) {
-                        while (true) {
-                            awaitPointerEventScope {
-                                val event = awaitPointerEvent()
-                                if (event.changes.any { it.pressed && !it.previousPressed }) {
-                                    lastTouchedWebView = ActiveWebView.TOP
-                                    pointerPosition = Offset.Zero
-                                }
-                            }
-                        }
-                    }
-                    .statusBarsPadding()
-            )
-        }
+        if (useHorizontalLayout) {
+            Row(modifier = parentModifier) {
 
-        geminiViewModel.webViewState = geminiHtmlViewer(
-            filePathCallbackState,
-            filePickerLauncher,
-            isKeyBoardShown,
-            modifier = modifier
-                .fillMaxSize()
-                .weight(1f)
-                .offset(y = keyboardOffset)
-                .pointerInput(Unit) {
-                    while (true) {
-                        awaitPointerEventScope {
-                            val event = awaitPointerEvent()
-                            event.changes
-                                .firstOrNull()
-                                ?.let { change ->
-                                    pointerPosition = change.position
-                                }
-                            if (event.changes.any { it.pressed && !it.previousPressed }) {
-                                lastTouchedWebView = ActiveWebView.BOTTOM
-                            }
-                        }
+                ShowWebview(
+                    modifier = Modifier.weight(1f).offset(y = keyboardOffset).statusBarsPadding(),
+                    geminiViewModel = geminiViewModel,
+                    filePathCallbackState = filePathCallbackState,
+                    filePickerLauncher = filePickerLauncher,
+                    isKeyBoardShown = isKeyBoardShown,
+                    onViewTouched = { offset ->
+                        pointerPosition = offset
+                        lastTouchedWebView = ActiveWebView.VIEW_TWO
                     }
+                )
+
+                ShowWebview(
+                    modifier = modifier.weight(1f).offset(y = keyboardOffset).statusBarsPadding(),
+                    geminiViewModel = geminiViewModel,
+                    filePathCallbackState = filePathCallbackState,
+                    filePickerLauncher = filePickerLauncher,
+                    isKeyBoardShown = isKeyBoardShown,
+                    onViewTouched = { offset ->
+                        pointerPosition = offset
+                        lastTouchedWebView = ActiveWebView.VIEW_ONE
+                    },
+                    onWebViewReady = {
+                        val thresholdInPx = with(density) { keyboardTopThreshold.toPx() }
+                        pointerPosition = Offset(x = pointerPosition.x, y = thresholdInPx)
+                        geminiViewModel.Ready()
+                    }
+                )
+            }
+        } else {
+            Column(modifier = parentModifier) {
+
+                if (geminiViewModel.splitScreen.value) {
+                    ShowWebview(
+                        modifier = Modifier.weight(1f).statusBarsPadding(),
+                        geminiViewModel = geminiViewModel,
+                        filePathCallbackState = filePathCallbackState,
+                        filePickerLauncher = filePickerLauncher,
+                        isKeyBoardShown = isKeyBoardShown,
+                        onViewTouched = {
+                            lastTouchedWebView = ActiveWebView.VIEW_TWO
+                            pointerPosition = Offset.Zero
+                        }
+                    )
                 }
-        ) {
-            pointerPosition = Offset(pointerPosition.x, thresholdInPx)
-            geminiViewModel.Ready()
+
+                ShowWebview(
+                    modifier = modifier.offset(y = keyboardOffset).weight(1f),
+                    geminiViewModel = geminiViewModel,
+                    filePathCallbackState = filePathCallbackState,
+                    filePickerLauncher = filePickerLauncher,
+                    isKeyBoardShown = isKeyBoardShown,
+                    onViewTouched = { offset ->
+                        pointerPosition = offset
+                        lastTouchedWebView = ActiveWebView.VIEW_ONE
+                    },
+                    onWebViewReady = {
+                        val thresholdInPx = with(density) { keyboardTopThreshold.toPx() }
+                        pointerPosition = Offset(x = pointerPosition.x, y = thresholdInPx)
+                        geminiViewModel.Ready()
+                    }
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -334,6 +363,39 @@ fun GeminiViewer(
                 )
             )
         }
+    }
+}
+
+
+@Composable
+private fun ShowWebview(
+    modifier: Modifier = Modifier,
+    geminiViewModel: GeminiViewModel,
+    filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
+    filePickerLauncher: ActivityResultLauncher<Intent>?,
+    isKeyBoardShown: Boolean,
+    onViewTouched: (Offset) -> Unit,
+    onWebViewReady: () -> Unit = {}
+) {
+    geminiViewModel.webViewState = geminiHtmlViewer(
+        filePathCallbackState,
+        filePickerLauncher,
+        isKeyBoardShown,
+        modifier = modifier
+            .pointerInput(Unit) {
+                while (true) {
+                    awaitPointerEventScope {
+                        val event = awaitPointerEvent()
+                        event.changes
+                            .firstOrNull()
+                            ?.let { change ->
+                                onViewTouched(change.position)
+                            }
+                    }
+                }
+            }
+    ) {
+        onWebViewReady()
     }
 }
 
