@@ -57,6 +57,8 @@ fun geminiHtmlViewer(
     val initialUrl = "https://aistudio.google.com"
     val errorUrl = "file:///android_asset/webview_error.html"
 
+    var lastUrl: String? = null
+
     val activity = LocalContext.current as? ComponentActivity
 
     AndroidView(
@@ -339,6 +341,16 @@ fun geminiHtmlViewer(
                     override fun onPermissionRequest(request: PermissionRequest) {
                         val resources = request.resources
                         request.grant(resources)
+                    }
+
+                    override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                        super.onProgressChanged(view, newProgress)
+
+                        val currentUrl = view?.url
+                        if (newProgress == 100 && currentUrl != null && currentUrl != lastUrl) {
+                            lastUrl = currentUrl
+                            postTransition()
+                        }
                     }
                 }
                 settings.javaScriptEnabled = true
