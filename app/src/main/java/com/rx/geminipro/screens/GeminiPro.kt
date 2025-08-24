@@ -109,6 +109,7 @@ fun GeminiViewer(
     RunClipboardManager(clipboardText, onCopied = {
         if (diagramPrefixes.any { clipboardText.value.startsWith(it) }) {
             scope.launch {
+                showHtmlPreviewButton = false
                 showDiagramButton = true
                 delay(6500)
                 showDiagramButton = false
@@ -117,6 +118,7 @@ fun GeminiViewer(
             clipboardText.value.lowercase().startsWith("<html>")
         ) {
             scope.launch {
+                showDiagramButton = false
                 showHtmlPreviewButton = true
                 delay(6500)
                 showHtmlPreviewButton = false
