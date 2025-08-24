@@ -128,7 +128,7 @@ fun GeminiViewer(
     })
 
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
@@ -187,7 +187,7 @@ fun GeminiViewer(
                 }
 
                 ShowWebview(
-                    modifier = modifier.offset(y = keyboardOffset).weight(1f),
+                    modifier = modifier.weight(1f).offset(y = keyboardOffset),
                     geminiViewModel = geminiViewModel,
                     filePathCallbackState = filePathCallbackState,
                     filePickerLauncher = filePickerLauncher,
@@ -209,11 +209,11 @@ fun GeminiViewer(
             visible = showDiagramButton,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.BottomEnd)
         ) {
             Button(
                 modifier = Modifier
-                    .align(Alignment.End)
+                    .align(Alignment.BottomEnd)
                     .padding(16.dp),
                 onClick = {
                     showDiagram = true
@@ -245,11 +245,11 @@ fun GeminiViewer(
             visible = showHtmlPreviewButton,
             enter = slideInVertically(initialOffsetY = { it }),
             exit = slideOutVertically(targetOffsetY = { it }),
-            modifier = Modifier.align(Alignment.End)
+            modifier = Modifier.align(Alignment.BottomEnd)
         ) {
             Button(
                 modifier = Modifier
-                    .align(Alignment.End)
+                    .align(Alignment.BottomEnd)
                     .padding(16.dp),
                 onClick = {
                     showHtmlPreviewScreen = true
