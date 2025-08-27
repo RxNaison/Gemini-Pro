@@ -40,6 +40,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
 import com.rx.geminipro.utils.network.WebAppInterface
 import java.lang.ref.WeakReference
+import androidx.core.net.toUri
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -122,14 +123,13 @@ fun geminiHtmlViewer(
                         }
                     } else if (url != null) {
                         try {
-                            val request = DownloadManager.Request(Uri.parse(url)).apply {
+                            val request = DownloadManager.Request(url.toUri()).apply {
                                 setMimeType(mimeType)
                                 addRequestHeader("User-Agent", userAgent)
                                 addRequestHeader("Cookie", android.webkit.CookieManager.getInstance().getCookie(url))
                                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                                 val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
                                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                                allowScanningByMediaScanner()
                             }
                             val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                             dm.enqueue(request)
@@ -148,7 +148,7 @@ fun geminiHtmlViewer(
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
                 webViewClient = object : WebViewClient() {
-                    @Deprecated("Deprecated in Java")
+                    @SuppressLint("QueryPermissionsNeeded")
                     override fun shouldOverrideUrlLoading(
                         view: WebView,
                         url: String
@@ -172,11 +172,12 @@ fun geminiHtmlViewer(
                             }
                         } else if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") || url.startsWith("market:")) {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                                 context.startActivity(intent)
                                 true
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
+                                e.printStackTrace()
                                 true
                             }
                         } else {
@@ -211,14 +212,12 @@ fun geminiHtmlViewer(
                         }
                     }
 
-                    @Deprecated("Deprecated in Java")
                     override fun onReceivedError(
                         view: WebView?,
                         errorCode: Int,
                         description: String?,
                         failingUrl: String?
                     ) {
-                        super.onReceivedError(view, errorCode, description, failingUrl)
                         if (failingUrl != null && failingUrl == view?.url && failingUrl != errorUrl) {
                             println("WebView Error (Deprecated): $errorCode - $description for $failingUrl")
                             lastFailedExternalUrl = failingUrl
@@ -248,7 +247,7 @@ fun geminiHtmlViewer(
 
                         customView = view
                         customViewCallback = callback
-                        originalSystemUiVisibility = activity.window.decorView.systemUiVisibility
+                        originalSystemUiVisibility = activity.window.decorView.visibility
                         originalOrientation = activity.requestedOrientation
 
                         if (fullscreenContainer == null) {
@@ -270,15 +269,6 @@ fun geminiHtmlViewer(
                             ViewGroup.LayoutParams.MATCH_PARENT))
 
                         fullscreenContainer?.visibility = View.VISIBLE
-
-                        activity.window.decorView.systemUiVisibility = (
-                                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                                        or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                                        or View.SYSTEM_UI_FLAG_FULLSCREEN
-                                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-                                )
 
 
                         if (onBackPressedCallback == null) {
@@ -308,7 +298,7 @@ fun geminiHtmlViewer(
                         customViewCallback?.onCustomViewHidden()
                         customViewCallback = null
 
-                        activity.window.decorView.systemUiVisibility = originalSystemUiVisibility
+                        activity.window.decorView.visibility = originalSystemUiVisibility
                         activity.requestedOrientation = originalOrientation
 
                         this@apply.visibility = View.VISIBLE
@@ -332,6 +322,7 @@ fun geminiHtmlViewer(
                             Toast.makeText(context, "Cannot open file picker", Toast.LENGTH_SHORT).show()
                             filePathCallbackState.value?.onReceiveValue(null)
                             filePathCallbackState.value = null
+                            e.printStackTrace()
                             return false
                         }
                         return true
@@ -354,17 +345,13 @@ fun geminiHtmlViewer(
                 }
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.databaseEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = false
                 settings.cacheMode = WebSettings.LOAD_DEFAULT
                 settings.allowFileAccess = true
                 settings.allowContentAccess = true
-                settings.allowUniversalAccessFromFileURLs = true
-                settings.allowFileAccessFromFileURLs = true
 
                 settings.javaScriptCanOpenWindowsAutomatically = true
 
-                settings.pluginState = WebSettings.PluginState.ON
                 settings.setSupportMultipleWindows(false)
 
                 addJavascriptInterface(
