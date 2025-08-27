@@ -180,8 +180,7 @@ fun geminiHtmlViewer(
                                 true
                             }
                         } else {
-                            view.loadUrl(url)
-                            true
+                            false
                         }
                     }
 
@@ -347,7 +346,7 @@ fun geminiHtmlViewer(
                         super.onProgressChanged(view, newProgress)
 
                         val currentUrl = view?.url
-                        if (newProgress == 100 && currentUrl != null && currentUrl != lastUrl) {
+                        if (newProgress == 100 && currentUrl != null && currentUrl != lastUrl && currentUrl.startsWith("https://aistudio.google.com")) {
                             lastUrl = currentUrl
                             postTransition()
                         }
