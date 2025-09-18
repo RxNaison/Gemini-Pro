@@ -40,6 +40,8 @@ import com.rx.geminipro.utils.network.BlobDownloaderInterface
 import com.rx.geminipro.utils.network.WebAppInterface
 import java.lang.ref.WeakReference
 import androidx.core.net.toUri
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -228,7 +230,6 @@ fun geminiHtmlViewer(
                     private var customView: View? = null
                     private var customViewCallback: CustomViewCallback? = null
                     private var originalOrientation: Int = 0
-                    private var originalSystemUiVisibility: Int = 0
                     private var fullscreenContainer: FrameLayout? = null
                     private var onBackPressedCallback: OnBackPressedCallback? = null
 
@@ -245,7 +246,6 @@ fun geminiHtmlViewer(
 
                         customView = view
                         customViewCallback = callback
-                        originalSystemUiVisibility = activity.window.decorView.visibility
                         originalOrientation = activity.requestedOrientation
 
                         if (fullscreenContainer == null) {
@@ -259,14 +259,15 @@ fun geminiHtmlViewer(
                         }
 
                         val decorView = activity.window.decorView as ViewGroup
-                        decorView.addView(fullscreenContainer, ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT))
-                        fullscreenContainer?.addView(customView, ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.MATCH_PARENT))
-
+                        decorView.addView(fullscreenContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                        fullscreenContainer?.addView(customView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                         fullscreenContainer?.visibility = View.VISIBLE
+
+                        val window = activity.window
+                        WindowInsetsControllerCompat(window, fullscreenContainer!!).let { controller ->
+                            controller.hide(WindowInsetsCompat.Type.systemBars())
+                            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        }
 
 
                         if (onBackPressedCallback == null) {
@@ -285,24 +286,24 @@ fun geminiHtmlViewer(
                             return
                         }
 
-                        customView?.visibility = View.GONE
-                        fullscreenContainer?.removeView(customView)
-
                         val decorView = activity.window.decorView as ViewGroup
+
+                        val window = activity.window
+                        WindowInsetsControllerCompat(window, fullscreenContainer!!).show(WindowInsetsCompat.Type.systemBars())
+
+                        fullscreenContainer?.removeView(customView)
                         decorView.removeView(fullscreenContainer)
-                        fullscreenContainer?.visibility = View.GONE
 
                         customView = null
+                        fullscreenContainer = null
                         customViewCallback?.onCustomViewHidden()
                         customViewCallback = null
 
-                        activity.window.decorView.visibility = originalSystemUiVisibility
                         activity.requestedOrientation = originalOrientation
-
-                        this@apply.visibility = View.VISIBLE
 
                         onBackPressedCallback?.isEnabled = false
                         onBackPressedCallback?.remove()
+                        onBackPressedCallback = null
                     }
 
                     override fun onShowFileChooser(
