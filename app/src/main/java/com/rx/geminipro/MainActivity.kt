@@ -63,7 +63,6 @@ class MainActivity : ComponentActivity() {
                 {
                     GeminiViewer(
                         isConnected,
-                        applicationContext,
                         geminiViewModel,
                         Modifier.then(if (!geminiViewModel.splitScreen.value) Modifier.statusBarsPadding() else Modifier))
                 }
@@ -71,7 +70,6 @@ class MainActivity : ComponentActivity() {
                 {
                     Scaffold { innerPadding ->
                         GeminiViewer(isConnected,
-                            applicationContext,
                             geminiViewModel,
                             Modifier.padding(innerPadding))
                     }

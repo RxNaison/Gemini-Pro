@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.rx.geminipro"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.rx.geminipro"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 153
-        versionName = "1.5.8"
+        targetSdk = 36
+        versionCode = 159
+        versionName = "1.6.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
