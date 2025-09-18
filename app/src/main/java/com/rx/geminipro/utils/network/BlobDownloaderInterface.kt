@@ -129,49 +129,4 @@ class BlobDownloaderInterface(private val context: Context) {
         val notificationId = System.currentTimeMillis().toInt()
         notificationManager.notify(notificationId, notification)
     }
-
-
-    companion object {
-        fun getBase64StringFromBlobUrl(blobUrl: String, mimeType: String?, filenameHint: String?): String {
-            val safeMimeType = mimeType?.replace("'", "\\'") ?: ""
-            val safeFilenameHint = filenameHint?.replace("'", "\\'") ?: ""
-            val safeBlobUrl = blobUrl.replace("'", "\\'")
-
-            return """
-            javascript:(function() {
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', '$safeBlobUrl', true);
-                xhr.responseType = 'blob';
-                xhr.onload = function(e) {
-                    if (this.status == 200) {
-                        var blobData = this.response;
-                        var reader = new FileReader();
-                        reader.readAsDataURL(blobData);
-                        reader.onloadend = function() {
-                            var base64data = reader.result;
-                            // Call Android interface method
-                            if (window.AndroidBlobHandler && typeof window.AndroidBlobHandler.processBlobData === 'function') {
-                                window.AndroidBlobHandler.processBlobData(base64data, '$safeMimeType', '$safeFilenameHint');
-                            } else {
-                                console.error('AndroidBlobHandler interface not found or processBlobData method is missing.');
-                            }
-                        }
-                        reader.onerror = function(error) {
-                             console.error('FileReader error:', error);
-                             // Optionally notify Android about the error
-                        };
-                    } else {
-                         console.error('XHR failed with status:', this.status);
-                         // Optionally notify Android about the error
-                    }
-                };
-                 xhr.onerror = function(error) {
-                    console.error('XHR network error:', error);
-                     // Optionally notify Android about the error
-                };
-                xhr.send();
-            })();
-            """.trimIndent()
-        }
-    }
 }

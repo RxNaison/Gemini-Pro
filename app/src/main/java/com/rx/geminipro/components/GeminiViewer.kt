@@ -10,7 +10,6 @@ import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.MimeTypeMap
 import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
@@ -73,50 +72,49 @@ fun geminiHtmlViewer(
                 setDownloadListener { url, userAgent, contentDisposition, mimeType, contentLength ->
                     if (url != null && url.startsWith("blob:")) {
                         val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                        val jsToRun = BlobDownloaderInterface.getBase64StringFromBlobUrl(url, mimeType, filename)
-                        this.loadUrl(jsToRun)
-                        Toast.makeText(context, "Download is starting...", Toast.LENGTH_SHORT).show()
+                        val script = """
+                            (function() {
+                                return new Promise((resolve, reject) => {
+                                    const xhr = new XMLHttpRequest();
+                                    xhr.open('GET', '$url', true);
+                                    xhr.responseType = 'blob';
+                                    xhr.onload = function() {
+                                        if (this.status === 200) {
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => resolve(reader.result);
+                                            reader.onerror = (err) => reject(err);
+                                            reader.readAsDataURL(this.response);
+                                        } else {
+                                            reject('Failed to fetch blob: ' + this.status);
+                                        }
+                                    };
+                                    xhr.onerror = (err) => reject(err);
+                                    xhr.send();
+                                });
+                            })();
+                        """.trimIndent()
+
+                        this.evaluateJavascript(script) { result ->
+                            if (result != null && result != "null" && result.startsWith("\"data:")) {
+                                val dataUrl = result.substring(1, result.length - 1)
+                                val base64EncodedData = dataUrl.substringAfter("base64,")
+                                BlobDownloaderInterface(context).processBlobData(dataUrl, mimeType, filename)
+                                Toast.makeText(context, "Download starting...", Toast.LENGTH_SHORT).show()
+
+                            } else {
+                                Toast.makeText(context, "Failed to retrieve blob data.", Toast.LENGTH_LONG).show()
+                                Log.e("BlobDownload", "Failed to get base64 from blob. JS result: $result")
+                            }
+                        }
                     } else if (url != null && url.startsWith("data:")) {
                         try {
                             Toast.makeText(context, "Download is starting...", Toast.LENGTH_SHORT).show()
-                            val commaIndex = url.indexOf(',')
-                            if (commaIndex == -1) {
-                                Toast.makeText(context, "Invalid data URL: missing comma", Toast.LENGTH_LONG).show()
-                                return@setDownloadListener
-                            }
+                            val filenameHint = "download_${System.currentTimeMillis()}"
+                            val header = url.substringBefore(',')
+                            val mimeTypeFromDataUrl = header.substringAfter("data:").substringBefore(';')
 
-                            val header = url.substring(0, commaIndex)
-                            val base64EncodedData = url.substring(commaIndex + 1)
+                            BlobDownloaderInterface(context).processBlobData(url, mimeTypeFromDataUrl, filenameHint)
 
-                            var extractedMimeType = "application/octet-stream"
-                            val mimeAndEncodingPart = header.substringAfter("data:", missingDelimiterValue = "")
-                            if (mimeAndEncodingPart.isNotBlank()) {
-                                extractedMimeType = mimeAndEncodingPart.substringBefore(';', missingDelimiterValue = mimeAndEncodingPart).trim()
-                            }
-
-                            var fileExtension: String? = MimeTypeMap.getSingleton().getExtensionFromMimeType(extractedMimeType)
-
-                            if (fileExtension == null) {
-                                val slashIndex = extractedMimeType.lastIndexOf('/')
-                                if (slashIndex != -1 && slashIndex < extractedMimeType.length - 1) {
-                                    var subtype = extractedMimeType.substring(slashIndex + 1)
-                                    val plusIndex = subtype.indexOf('+')
-                                    if (plusIndex != -1) {
-                                        subtype = subtype.substring(0, plusIndex)
-                                    }
-                                    if (subtype.isNotBlank() && subtype.length <= 5 && subtype.all { it.isLetterOrDigit() }) {
-                                        fileExtension = subtype
-                                    }
-                                }
-                            }
-
-                            if (fileExtension.isNullOrBlank()) {
-                                fileExtension = "bin"
-                            }
-
-                            val filenameHint = "download_${System.currentTimeMillis()}.$fileExtension"
-
-                            BlobDownloaderInterface(context).processBlobData(base64EncodedData, extractedMimeType, filenameHint)
                         } catch (e: Exception) {
                             Toast.makeText(context, "Error processing data URL: ${e.message}", Toast.LENGTH_LONG).show()
                             Log.e("DataUrlDownload", "Error processing data URL", e)
@@ -343,6 +341,7 @@ fun geminiHtmlViewer(
                         }
                     }
                 }
+
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = false
