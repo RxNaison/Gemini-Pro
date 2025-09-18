@@ -1,6 +1,5 @@
 package com.rx.geminipro.screens
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
@@ -468,9 +467,9 @@ fun GeminiViewer(
                         AdditionalMenuItem(
                             painterResource(
                                 id = if(isMenuLeft)
-                                    R.drawable.outline_arrow_menu_open_24
-                                else
                                     R.drawable.outline_arrow_menu_close_24
+                                else
+                                    R.drawable.outline_arrow_menu_open_24
                             ),
                             "Menu Side",
                         ) {
