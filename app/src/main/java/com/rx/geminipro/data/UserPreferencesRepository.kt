@@ -21,7 +21,7 @@ class UserPreferencesRepository(context: Context) {
 
     val isMenuLeftFlow: Flow<Boolean> = dataStore.data
         .map { preferences ->
-            preferences[PreferencesKeys.IS_MENU_LEFT] ?: true
+            preferences[PreferencesKeys.IS_MENU_LEFT] ?: false
         }
 
     suspend fun saveMenuPosition(isLeft: Boolean) {

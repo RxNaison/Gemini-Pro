@@ -472,7 +472,7 @@ fun GeminiViewer(
                                 else
                                     R.drawable.outline_arrow_menu_close_24
                             ),
-                            "Change Menu Position",
+                            "Menu Side",
                         ) {
                             geminiViewModel.setMenuPosition(!isMenuLeft)
                         }
