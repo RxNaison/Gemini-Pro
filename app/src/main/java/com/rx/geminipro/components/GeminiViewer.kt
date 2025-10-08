@@ -1,31 +1,18 @@
 package com.rx.geminipro.components
 
 import android.annotation.SuppressLint
-import android.app.DownloadManager
-import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
 import android.net.Uri
-import android.os.Environment
 import android.util.Log
-import android.view.View
 import android.view.ViewGroup
-import android.webkit.PermissionRequest
-import android.webkit.URLUtil
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.ValueCallback
-import android.webkit.WebChromeClient
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
-import android.webkit.WebViewClient
-import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -33,326 +20,80 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import com.rx.geminipro.utils.network.BlobDownloaderInterface
 import com.rx.geminipro.utils.network.WebAppInterface
 import java.lang.ref.WeakReference
-import androidx.core.net.toUri
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun geminiHtmlViewer(
+fun GeminiWebViewer(
+    modifier: Modifier,
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
     filePickerLauncher: ActivityResultLauncher<Intent>?,
-    isKeyBoardShown: Boolean,
-    modifier: Modifier,
-    postTransition: () -> Unit = {}
-): MutableState<WebView?> {
-    val background = MaterialTheme.colorScheme.background
-    val webViewState = remember { mutableStateOf<WebView?>(null) }
+    onWebViewCreated: (WebView) -> Unit,
+    onPageFinished: (WebView, String) -> Unit
+) {
+    val context = LocalContext.current
+    val activity = LocalActivity.current as ComponentActivity
 
     var lastFailedExternalUrl by remember { mutableStateOf<String?>(null) }
     val initialUrl = "https://aistudio.google.com"
-    val errorUrl = "file:///android_asset/webview_error.html"
 
-    var lastUrl: String? = null
+    val webViewManager = remember(context, activity) {
+        activity.let {
+            WebViewManager(context, WeakReference(it)).apply {
+                this.onShowToast = { message ->
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+                this.onStartActivity = { intent ->
+                    context.startActivity(intent)
+                }
+                this.onShowFileChooser = { callback, intent ->
+                    filePathCallbackState.value?.onReceiveValue(null)
+                    filePathCallbackState.value = callback
+                    try {
+                        filePickerLauncher?.launch(intent)
+                    } catch (e: Exception) {
+                        Log.e("GeminiWebViewer", "Cannot open file picker", e)
+                        this.onShowToast("Cannot open file picker")
+                        filePathCallbackState.value?.onReceiveValue(null)
+                        filePathCallbackState.value = null
+                    }
+                }
+                this.onPageFinished = onPageFinished
+                this.onPermissionRequest = { request -> request.grant(request.resources) }
+            }
+        }
+    }
 
-    val activity = LocalContext.current as? ComponentActivity
 
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            WebView(context).apply {
-                this.setBackgroundColor(background.toArgb())
+        factory = { ctx ->
+            WebView(ctx).apply {
+                layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                setBackgroundColor(Color.Transparent.toArgb())
 
-                addJavascriptInterface(BlobDownloaderInterface(context), "AndroidBlobHandler")
-
-                setDownloadListener { url, userAgent, contentDisposition, mimeType, contentLength ->
-                    if (url != null && url.startsWith("blob:")) {
-                        val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                        val script = """
-                            (function() {
-                                return new Promise((resolve, reject) => {
-                                    const xhr = new XMLHttpRequest();
-                                    xhr.open('GET', '$url', true);
-                                    xhr.responseType = 'blob';
-                                    xhr.onload = function() {
-                                        if (this.status === 200) {
-                                            const reader = new FileReader();
-                                            reader.onloadend = () => resolve(reader.result);
-                                            reader.onerror = (err) => reject(err);
-                                            reader.readAsDataURL(this.response);
-                                        } else {
-                                            reject('Failed to fetch blob: ' + this.status);
-                                        }
-                                    };
-                                    xhr.onerror = (err) => reject(err);
-                                    xhr.send();
-                                });
-                            })();
-                        """.trimIndent()
-
-                        this.evaluateJavascript(script) { result ->
-                            if (result != null && result != "null" && result.startsWith("\"data:")) {
-                                val dataUrl = result.substring(1, result.length - 1)
-                                val base64EncodedData = dataUrl.substringAfter("base64,")
-                                BlobDownloaderInterface(context).processBlobData(dataUrl, mimeType, filename)
-                                Toast.makeText(context, "Download starting...", Toast.LENGTH_SHORT).show()
-
-                            } else {
-                                Toast.makeText(context, "Failed to retrieve blob data.", Toast.LENGTH_LONG).show()
-                                Log.e("BlobDownload", "Failed to get base64 from blob. JS result: $result")
-                            }
-                        }
-                    } else if (url != null && url.startsWith("data:")) {
-                        try {
-                            Toast.makeText(context, "Download is starting...", Toast.LENGTH_SHORT).show()
-                            val filenameHint = "download_${System.currentTimeMillis()}"
-                            val header = url.substringBefore(',')
-                            val mimeTypeFromDataUrl = header.substringAfter("data:").substringBefore(';')
-
-                            BlobDownloaderInterface(context).processBlobData(url, mimeTypeFromDataUrl, filenameHint)
-
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Error processing data URL: ${e.message}", Toast.LENGTH_LONG).show()
-                            Log.e("DataUrlDownload", "Error processing data URL", e)
-                        }
-                    } else if (url != null) {
-                        try {
-                            val request = DownloadManager.Request(url.toUri()).apply {
-                                setMimeType(mimeType)
-                                addRequestHeader("User-Agent", userAgent)
-                                addRequestHeader("Cookie", android.webkit.CookieManager.getInstance().getCookie(url))
-                                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                                val filename = URLUtil.guessFileName(url, contentDisposition, mimeType)
-                                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                            }
-                            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-                            dm.enqueue(request)
-                            Toast.makeText(context, "Starting download: ${URLUtil.guessFileName(url, contentDisposition, mimeType)}", Toast.LENGTH_LONG).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Download failed: ${e.message}", Toast.LENGTH_LONG).show()
-                        }
-                    } else {
-                        Toast.makeText(context, "Invalid download URL", Toast.LENGTH_SHORT).show()
-                    }
+                webViewManager.let { manager ->
+                    webViewClient = manager.webViewClient
+                    webChromeClient = manager.webChromeClient
+                    setDownloadListener(manager.downloadListener)
                 }
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    mediaPlaybackRequiresUserGesture = false
+                    cacheMode = WebSettings.LOAD_DEFAULT
+                    allowFileAccess = true
+                    allowContentAccess = true
 
+                    javaScriptCanOpenWindowsAutomatically = true
 
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                webViewClient = object : WebViewClient() {
-                    @SuppressLint("QueryPermissionsNeeded")
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView,
-                        url: String
-                    ): Boolean {
-                        return if (url.startsWith("intent://")) {
-                            try {
-                                val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                                val fallbackUrl = intent.getStringExtra("browser_fallback_url")
-                                if (intent.resolveActivity(context.packageManager) != null) {
-                                    context.startActivity(intent)
-                                } else if (fallbackUrl != null) {
-                                    view.loadUrl(fallbackUrl)
-                                } else {
-                                    Toast.makeText(context, "Cannot handle intent", Toast.LENGTH_SHORT).show()
-                                }
-                                true
-                            } catch (e: Exception) {
-                                e.printStackTrace()
-                                Toast.makeText(context, "Error handling intent URL", Toast.LENGTH_SHORT).show()
-                                false
-                            }
-                        } else if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") || url.startsWith("market:")) {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                                context.startActivity(intent)
-                                true
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
-                                e.printStackTrace()
-                                true
-                            }
-                        } else {
-                            false
-                        }
-                    }
-
-                    override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                        super.onPageStarted(view, url, favicon)
-                        if (url != errorUrl) {
-                            lastFailedExternalUrl = null
-                        }
-                    }
-
-                    override fun onPageFinished(view: WebView, url: String) {
-                        super.onPageFinished(view, url)
-                        postTransition()
-
-                    }
-
-                    override fun onReceivedError(
-                        view: WebView?,
-                        request: WebResourceRequest?,
-                        error: WebResourceError?
-                    ) {
-                        super.onReceivedError(view, request, error)
-                        if (request?.isForMainFrame == true && request.url.toString() != errorUrl) {
-                            val failingUrl = request.url.toString()
-                            println("WebView Error: ${error?.errorCode} - ${error?.description} for $failingUrl")
-                            lastFailedExternalUrl = failingUrl
-                            view?.loadUrl(errorUrl)
-                        }
-                    }
-
-                    override fun onReceivedError(
-                        view: WebView?,
-                        errorCode: Int,
-                        description: String?,
-                        failingUrl: String?
-                    ) {
-                        if (failingUrl != null && failingUrl == view?.url && failingUrl != errorUrl) {
-                            println("WebView Error (Deprecated): $errorCode - $description for $failingUrl")
-                            lastFailedExternalUrl = failingUrl
-                            view.loadUrl(errorUrl)
-                        }
-                    }
+                    setSupportMultipleWindows(false)
                 }
-                webChromeClient = object : WebChromeClient() {
-
-                    private var customView: View? = null
-                    private var customViewCallback: CustomViewCallback? = null
-                    private var originalOrientation: Int = 0
-                    private var fullscreenContainer: FrameLayout? = null
-                    private var onBackPressedCallback: OnBackPressedCallback? = null
-
-                    override fun onShowCustomView(view: View?, callback: CustomViewCallback?) {
-                        if (activity == null) {
-                            callback?.onCustomViewHidden()
-                            return
-                        }
-
-                        if (customView != null) {
-                            callback?.onCustomViewHidden()
-                            return
-                        }
-
-                        customView = view
-                        customViewCallback = callback
-                        originalOrientation = activity.requestedOrientation
-
-                        if (fullscreenContainer == null) {
-                            fullscreenContainer = FrameLayout(activity).apply {
-                                layoutParams = FrameLayout.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT,
-                                    ViewGroup.LayoutParams.MATCH_PARENT
-                                )
-                                setBackgroundColor(android.graphics.Color.BLACK)
-                            }
-                        }
-
-                        val decorView = activity.window.decorView as ViewGroup
-                        decorView.addView(fullscreenContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                        fullscreenContainer?.addView(customView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-                        fullscreenContainer?.visibility = View.VISIBLE
-
-                        val window = activity.window
-                        WindowInsetsControllerCompat(window, fullscreenContainer!!).let { controller ->
-                            controller.hide(WindowInsetsCompat.Type.systemBars())
-                            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                        }
-
-
-                        if (onBackPressedCallback == null) {
-                            onBackPressedCallback = object : OnBackPressedCallback(true) {
-                                override fun handleOnBackPressed() {
-                                    onHideCustomView()
-                                }
-                            }
-                        }
-                        onBackPressedCallback?.isEnabled = true
-                        activity.onBackPressedDispatcher.addCallback(activity, onBackPressedCallback!!)
-                    }
-
-                    override fun onHideCustomView() {
-                        if (activity == null || customView == null) {
-                            return
-                        }
-
-                        val decorView = activity.window.decorView as ViewGroup
-
-                        val window = activity.window
-                        WindowInsetsControllerCompat(window, fullscreenContainer!!).show(WindowInsetsCompat.Type.systemBars())
-
-                        fullscreenContainer?.removeView(customView)
-                        decorView.removeView(fullscreenContainer)
-
-                        customView = null
-                        fullscreenContainer = null
-                        customViewCallback?.onCustomViewHidden()
-                        customViewCallback = null
-
-                        activity.requestedOrientation = originalOrientation
-
-                        onBackPressedCallback?.isEnabled = false
-                        onBackPressedCallback?.remove()
-                        onBackPressedCallback = null
-                    }
-
-                    override fun onShowFileChooser(
-                        webView: WebView,
-                        filePathCallback: ValueCallback<Array<Uri>>,
-                        fileChooserParams: FileChooserParams
-                    ): Boolean {
-                        filePathCallbackState.value?.onReceiveValue(null)
-                        filePathCallbackState.value = filePathCallback
-
-                        val intent = fileChooserParams.createIntent()
-                        try {
-                            filePickerLauncher?.launch(intent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Cannot open file picker", Toast.LENGTH_SHORT).show()
-                            filePathCallbackState.value?.onReceiveValue(null)
-                            filePathCallbackState.value = null
-                            e.printStackTrace()
-                            return false
-                        }
-                        return true
-                    }
-
-                    override fun onPermissionRequest(request: PermissionRequest) {
-                        val resources = request.resources
-                        request.grant(resources)
-                    }
-
-                    override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                        super.onProgressChanged(view, newProgress)
-
-                        val currentUrl = view?.url
-                        if (newProgress == 100 && currentUrl != null && currentUrl != lastUrl && currentUrl.startsWith("https://aistudio.google.com")) {
-                            lastUrl = currentUrl
-                            postTransition()
-                        }
-                    }
-                }
-
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.mediaPlaybackRequiresUserGesture = false
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
-                settings.allowFileAccess = true
-                settings.allowContentAccess = true
-
-                settings.javaScriptCanOpenWindowsAutomatically = true
-
-                settings.setSupportMultipleWindows(false)
 
                 addJavascriptInterface(
                     WebAppInterface(
@@ -362,19 +103,9 @@ fun geminiHtmlViewer(
                     "Android"
                 )
 
-                loadUrl("https://aistudio.google.com")
-
-                webViewState.value = this
+                onWebViewCreated(this)
+                loadUrl(initialUrl)
             }
-        },
+        }
     )
-
-    webViewState.value?.let { webView ->
-        if (!isKeyBoardShown)
-            BackHandler(webView.canGoBack()) {
-                webView.goBack()
-            }
-    }
-
-    return webViewState
 }

@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-kapt")
+    alias(libs.plugins.hilt.android.plugin)
 }
 
 android {
@@ -27,25 +29,21 @@ android {
             )
         }
     }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+
+    kotlin {
+        jvmToolchain(21)
     }
-    kotlinOptions {
-        jvmTarget = "11"
+
+    hilt {
+        enableAggregatingTask = false
     }
+
     buildFeatures {
         compose = true
     }
 }
 
 dependencies {
-
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.core.splashscreen)
-    implementation(libs.datastore.preferences)
-    implementation(libs.datastore)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -56,6 +54,17 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.webkit)
+
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.core.splashscreen)
+    implementation(libs.datastore.preferences)
+    implementation(libs.datastore)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

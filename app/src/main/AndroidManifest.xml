@@ -2,6 +2,24 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <queries>
+        <!--
+         Allows querying for apps that can handle generic links (e.g., browsers)
+         and app deep links.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+
+        <!--
+         Allows querying for the Google Play Store to handle 'market:' links.
+        -->
+        <package android:name="com.android.vending" />
+    </queries>
+
+
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CAMERA"/>
@@ -13,17 +31,18 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
 
     <application
+        android:name=".GeminiProApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
+        android:windowSoftInputMode="adjustPan"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.GeminiPro.Starting"
-        tools:targetApi="31"
-        tools:ignore="UnusedAttribute">
+        tools:targetApi="33">
         <activity
             android:name=".MainActivity"
             android:exported="true"
