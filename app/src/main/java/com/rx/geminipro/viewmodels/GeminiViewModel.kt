@@ -61,7 +61,7 @@ class GeminiViewModel @Inject constructor(
             is GeminiUiEvent.OpenInBrowserClicked -> openInBrowser()
             is GeminiUiEvent.SharePageClicked -> sharePage()
             is GeminiUiEvent.CopyLinkClicked -> copyLink()
-            is GeminiUiEvent.ReloadPageClicked -> reloadPage()
+            is GeminiUiEvent.ReloadPageClicked -> handleReload()
             is GeminiUiEvent.GoForwardClicked -> goForward()
             is GeminiUiEvent.MenuPositionChanged -> setMenuPosition(event.isLeft)
             is GeminiUiEvent.BackButtonPressed -> handleBackPress()
@@ -91,7 +91,16 @@ class GeminiViewModel @Inject constructor(
 
     fun onWebViewNavigation() {
         val canGoBack = webViewState.value?.canGoBack() ?: false
-        _uiState.update { it.copy(canWebViewGoBack = canGoBack) }
+        _uiState.update { it.copy(canWebViewGoBack = canGoBack, isReloading = false) }
+    }
+
+    private fun handleReload()
+    {
+        if(_uiState.value.isReloading)
+            return
+
+        _uiState.update { it.copy(isReloading = true) }
+        webViewState.value?.reload()
     }
 
     private fun handleBackPress() {
@@ -179,11 +188,6 @@ class GeminiViewModel @Inject constructor(
                 _sideEffectChannel.send(GeminiSideEffect.ShowToast("No URL to copy."))
             }
         }
-    }
-
-    private fun reloadPage()
-    {
-        webViewState.value?.reload()
     }
 
     private fun goForward()

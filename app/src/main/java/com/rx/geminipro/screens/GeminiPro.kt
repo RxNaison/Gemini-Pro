@@ -19,8 +19,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -142,6 +145,8 @@ fun GeminiProScreen(
                 viewModel.onEvent(GeminiUiEvent.ApplicationReady)
             }
         )
+
+        ReloadIndicator(isLoading = uiState.isReloading)
 
         PreviewButtons(
             clipboardContentType = uiState.clipboardContentType,
@@ -319,6 +324,7 @@ private fun BoxScope.MenuHandles(
 ) {
     Box(
         modifier = Modifier
+            .statusBarsPadding()
             .align(Alignment.TopCenter)
             .width(80.dp)
             .height(60.dp)
@@ -388,5 +394,26 @@ private fun DialogButton(
         )
     ) {
         androidx.compose.material3.Text(text)
+    }
+}
+
+@Composable
+private fun BoxScope.ReloadIndicator(isLoading: Boolean) {
+    AnimatedVisibility(
+        visible = isLoading,
+        modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding(),
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Surface(
+            modifier = Modifier.padding(top = 16.dp),
+            shape = CircleShape,
+            shadowElevation = 8.dp
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.padding(8.dp),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
     }
 }

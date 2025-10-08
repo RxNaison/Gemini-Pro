@@ -10,7 +10,8 @@ data class GeminiUiState(
     val isKeyboardVisible: Boolean = false,
     val clipboardContentType: ClipboardContentType = ClipboardContentType.NONE,
     val activeWebViewUrl: String? = null,
-    val canWebViewGoBack: Boolean = false
+    val canWebViewGoBack: Boolean = false,
+    val isReloading: Boolean = false
 )
 
 enum class ClipboardContentType { NONE, DIAGRAM, HTML }
