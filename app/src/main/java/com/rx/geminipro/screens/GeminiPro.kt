@@ -202,11 +202,14 @@ private fun WebViewLayout(
     val useHorizontalLayout = uiState.isSplitScreen && (isLandscape || isLargeScreen)
 
     val layoutModifier = Modifier.fillMaxSize()
+    
+    val splitModifier = Modifier.statusBarsPadding()
+    val mainModifier = if(uiState.isSplitScreen) Modifier else splitModifier
 
     if (useHorizontalLayout) {
         Row(modifier = layoutModifier) {
             WebViewWrapper(
-                modifier = Modifier.weight(1f),
+                modifier = splitModifier.weight(1f),
                 uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
@@ -214,7 +217,7 @@ private fun WebViewLayout(
                 onPageFinished = onPageFinished
             )
             WebViewWrapper(
-                modifier = Modifier.weight(1f),
+                modifier = splitModifier.weight(1f),
                 uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
@@ -226,7 +229,7 @@ private fun WebViewLayout(
         Column(modifier = layoutModifier) {
             if (uiState.isSplitScreen) {
                 WebViewWrapper(
-                    modifier = Modifier.weight(1f),
+                    modifier = splitModifier.weight(1f),
                     uiState = uiState,
                     filePickerLauncher = filePickerLauncher,
                     filePathCallbackState = filePathCallbackState,
@@ -235,7 +238,7 @@ private fun WebViewLayout(
                 )
             }
             WebViewWrapper(
-                modifier = Modifier.weight(1f),
+                modifier = mainModifier.weight(1f),
                 uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
@@ -277,7 +280,7 @@ private fun WebViewWrapper(
     )
 
     GeminiWebViewer(
-        modifier = modifier.offset(y = animatedOffset).statusBarsPadding(),
+        modifier = modifier.offset(y = animatedOffset),
         filePathCallbackState = filePathCallbackState,
         filePickerLauncher = filePickerLauncher,
         onWebViewCreated = onWebViewCreated,
