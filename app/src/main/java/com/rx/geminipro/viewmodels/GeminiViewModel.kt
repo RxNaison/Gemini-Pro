@@ -1,18 +1,14 @@
 package com.rx.geminipro.viewmodels
 
 import android.app.Application
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.content.Intent
-import android.webkit.WebView
-import androidx.compose.runtime.mutableStateOf
 import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.rx.geminipro.components.getMermaidDiagramPrefixes
 import com.rx.geminipro.data.UserPreferencesRepository
 import com.rx.geminipro.utils.services.GoogleServices
+import com.rx.geminipro.utils.system.ClipboardHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -28,6 +24,7 @@ import kotlinx.coroutines.launch
 class GeminiViewModel @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val googleServices: GoogleServices,
+    private val clipboardHelper: ClipboardHelper,
     application: Application
 ) : AndroidViewModel(application) {
     private val  _uiState = MutableStateFlow(GeminiUiState())
@@ -35,9 +32,6 @@ class GeminiViewModel @Inject constructor(
 
     private val _sideEffectChannel = Channel<GeminiSideEffect>()
     val sideEffectFlow = _sideEffectChannel.receiveAsFlow()
-
-    var webViewState = mutableStateOf<WebView?>(null)
-        private set
 
     init {
         viewModelScope.launch {
@@ -68,6 +62,7 @@ class GeminiViewModel @Inject constructor(
             is GeminiUiEvent.KeyboardVisibilityChanged -> {
                 _uiState.update { it.copy(isKeyboardVisible = event.isVisible) }
             }
+            is GeminiUiEvent.WebViewNavigated -> onWebViewNavigated(event.canGoBack, event.url)
         }
     }
 
@@ -89,25 +84,22 @@ class GeminiViewModel @Inject constructor(
         }
     }
 
-    fun onWebViewNavigation() {
-        val canGoBack = webViewState.value?.canGoBack() ?: false
-        _uiState.update { it.copy(canWebViewGoBack = canGoBack, isReloading = false) }
+    private fun onWebViewNavigated(canGoBack: Boolean, url: String?) {
+        _uiState.update { it.copy(canWebViewGoBack = canGoBack, activeWebViewUrl = url, isReloading = false) }
     }
 
-    private fun handleReload()
-    {
-        if(_uiState.value.isReloading)
-            return
+    private fun handleReload() {
+        if(_uiState.value.isReloading) return
 
         _uiState.update { it.copy(isReloading = true) }
-        webViewState.value?.reload()
+        viewModelScope.launch {
+            _sideEffectChannel.send(GeminiSideEffect.WebViewReload)
+        }
     }
 
     private fun handleBackPress() {
-        webViewState.value?.let { webView ->
-            if (webView.canGoBack()) {
-                webView.goBack()
-            }
+        viewModelScope.launch {
+            _sideEffectChannel.send(GeminiSideEffect.WebViewGoBack)
         }
     }
 
@@ -148,9 +140,8 @@ class GeminiViewModel @Inject constructor(
         }
     }
 
-    private fun openInBrowser()
-    {
-        webViewState.value?.url?.let { url ->
+    private fun openInBrowser() {
+        _uiState.value.activeWebViewUrl?.let { url ->
             val intent = Intent(Intent.ACTION_VIEW, url.toUri())
             viewModelScope.launch {
                 _sideEffectChannel.send(GeminiSideEffect.LaunchIntent(intent))
@@ -158,9 +149,8 @@ class GeminiViewModel @Inject constructor(
         }
     }
 
-    private fun sharePage()
-    {
-        webViewState.value?.url?.let { url ->
+    private fun sharePage() {
+        _uiState.value.activeWebViewUrl?.let { url ->
             val intent = Intent(Intent.ACTION_SEND).apply {
                 putExtra(Intent.EXTRA_TEXT, url)
                 type = "text/plain"
@@ -172,14 +162,10 @@ class GeminiViewModel @Inject constructor(
         }
     }
 
-    private fun copyLink()
-    {
-        val url = webViewState.value?.url
+    private fun copyLink() {
+        val url = _uiState.value.activeWebViewUrl
         if (url != null) {
-            val clipboardManager = getApplication<Application>().getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-            val clip = ClipData.newPlainText("Copied URL", url)
-            clipboardManager.setPrimaryClip(clip)
-
+            clipboardHelper.copy(url, "Copied URL")
             viewModelScope.launch {
                 _sideEffectChannel.send(GeminiSideEffect.ShowToast("Link copied!"))
             }
@@ -192,6 +178,8 @@ class GeminiViewModel @Inject constructor(
 
     private fun goForward()
     {
-        webViewState.value?.goForward()
+        viewModelScope.launch {
+            _sideEffectChannel.send(GeminiSideEffect.WebViewGoForward)
+        }
     }
 }

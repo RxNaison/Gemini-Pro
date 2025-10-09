@@ -30,10 +30,14 @@ sealed interface GeminiUiEvent {
     data class MenuPositionChanged(val isLeft: Boolean) : GeminiUiEvent
     object BackButtonPressed : GeminiUiEvent
     data class KeyboardVisibilityChanged(val isVisible: Boolean) : GeminiUiEvent
+    data class WebViewNavigated(val canGoBack: Boolean, val url: String?) : GeminiUiEvent
 }
 
 sealed interface GeminiSideEffect {
     data class LaunchIntent(val intent: Intent) : GeminiSideEffect
     data class ShowToast(val message: String) : GeminiSideEffect
     object LaunchSaveToFile : GeminiSideEffect
+    object WebViewGoBack : GeminiSideEffect
+    object WebViewReload : GeminiSideEffect
+    object WebViewGoForward : GeminiSideEffect
 }

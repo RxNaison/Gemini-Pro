@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
+import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,6 +52,8 @@ fun GeminiProScreen(
     val context = LocalContext.current
     val clipboardManager = LocalContext.current.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
+    var webView by remember { mutableStateOf<WebView?>(null) }
+
     var showAdditionalMenu by remember { mutableStateOf(false) }
     var showDiagram by remember { mutableStateOf(false) }
     var showHtmlPreview by remember { mutableStateOf(false) }
@@ -91,10 +94,14 @@ fun GeminiProScreen(
     // --- Side Effect Handler ---
     LaunchedEffect(Unit) {
         viewModel.sideEffectFlow.collect { effect ->
+            val currentWebView = webView ?: return@collect
             when (effect) {
                 is GeminiSideEffect.LaunchIntent -> context.startActivity(effect.intent)
                 is GeminiSideEffect.ShowToast -> Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
                 is GeminiSideEffect.LaunchSaveToFile -> documentLauncher.launch("gemini-note.txt")
+                is GeminiSideEffect.WebViewGoBack -> currentWebView.goBack()
+                is GeminiSideEffect.WebViewReload -> currentWebView.reload()
+                is GeminiSideEffect.WebViewGoForward -> currentWebView.goForward()
             }
         }
     }
@@ -137,13 +144,19 @@ fun GeminiProScreen(
             uiState = uiState,
             filePickerLauncher = filePickerLauncher,
             filePathCallbackState = filePathCallbackState,
-            onWebViewCreated = { webView ->
-                viewModel.webViewState.value = webView
-            },
-            onPageFinished = {
-                viewModel.onWebViewNavigation()
+            onWebViewCreated = { createdWebView ->
+                webView = createdWebView
                 viewModel.onEvent(GeminiUiEvent.ApplicationReady)
+            },
+            onPageFinished = { finishedWebView ->
+                viewModel.onEvent(
+                    GeminiUiEvent.WebViewNavigated(
+                        canGoBack = finishedWebView.canGoBack(),
+                        url = finishedWebView.url
+                    )
+                )
             }
+
         )
 
         ReloadIndicator(isLoading = uiState.isReloading)
@@ -191,8 +204,8 @@ private fun WebViewLayout(
     uiState: GeminiUiState,
     filePickerLauncher: ActivityResultLauncher<Intent>,
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
-    onWebViewCreated: (webView: android.webkit.WebView) -> Unit,
-    onPageFinished: () -> Unit
+    onWebViewCreated: (webView: WebView) -> Unit,
+    onPageFinished: (webView: WebView) -> Unit
 ) {
     val configuration = LocalConfiguration.current
     val windowInfo = LocalWindowInfo.current
@@ -255,8 +268,8 @@ private fun WebViewWrapper(
     uiState: GeminiUiState,
     filePickerLauncher: ActivityResultLauncher<Intent>,
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
-    onWebViewCreated: (webView: android.webkit.WebView) -> Unit,
-    onPageFinished: () -> Unit
+    onWebViewCreated: (webView: WebView) -> Unit,
+    onPageFinished: (webView: WebView) -> Unit
 ) {
     val density = LocalDensity.current
 
@@ -284,8 +297,8 @@ private fun WebViewWrapper(
         filePathCallbackState = filePathCallbackState,
         filePickerLauncher = filePickerLauncher,
         onWebViewCreated = onWebViewCreated,
-        onPageFinished = { _, _ ->
-            onPageFinished()
+        onPageFinished = { webView, _ ->
+            onPageFinished(webView)
         }
     )
 }
