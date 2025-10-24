@@ -71,8 +71,22 @@ fun GeminiProScreen(
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val uris = if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { arrayOf(it) } ?: emptyArray()
+        if (filePathCallbackState.value == null) {
+            return@rememberLauncherForActivityResult
+        }
+
+        val uris: Array<Uri> = if (result.resultCode == Activity.RESULT_OK) {
+            val data = result.data
+            if (data?.clipData != null) {
+                val clipData = data.clipData!!
+                List(clipData.itemCount) { i ->
+                    clipData.getItemAt(i).uri
+                }.toTypedArray()
+            } else if (data?.data != null) {
+                arrayOf(data.data!!)
+            } else {
+                emptyArray()
+            }
         } else {
             emptyArray()
         }
@@ -273,7 +287,7 @@ private fun WebViewWrapper(
 ) {
     val density = LocalDensity.current
 
-    val targetOffset = if (uiState.isKeyboardVisible) {
+    val targetOffset = if (uiState.isKeyboardVisible && uiState.activeWebViewUrl?.startsWith("https://aistudio.google.com") == true) {
         val keyboardHeightPx = WindowInsets.ime.getBottom(density)
         val navBarHeightPx = WindowInsets.navigationBars.getBottom(density)
         val offsetPx = navBarHeightPx - keyboardHeightPx
@@ -287,7 +301,7 @@ private fun WebViewWrapper(
         animationSpec = if (uiState.isKeyboardVisible) {
             snap()
         } else {
-            tween(durationMillis = 300, easing = FastOutSlowInEasing)
+            tween(durationMillis = 200, easing = FastOutSlowInEasing)
         },
         label = "keyboardOffsetAnimation"
     )
