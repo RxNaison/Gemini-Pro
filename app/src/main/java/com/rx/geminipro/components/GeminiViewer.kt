@@ -40,7 +40,7 @@ fun GeminiWebViewer(
     val activity = LocalActivity.current as ComponentActivity
 
     var lastFailedExternalUrl by remember { mutableStateOf<String?>(null) }
-    val initialUrl = "https://aistudio.google.com"
+    val initialUrl = "https://aistudio.google.com/u/0/prompts/new_chat"
 
     val webViewManager = remember(context, activity) {
         activity.let {
