@@ -232,7 +232,7 @@ class WebViewManager(
             val downloader = BlobDownloaderInterface()
             val header = url.substringBefore(',')
             val mimeType = header.substringAfter("data:").substringBefore(';')
-            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "wav"
+            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: mimeType.substringAfter("/")
             val filename = "download_${System.currentTimeMillis()}.$extension"
 
             val file = downloader.processBlobData(url, filename)

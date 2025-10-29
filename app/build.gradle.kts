@@ -14,8 +14,8 @@ android {
         applicationId = "com.rx.geminipro"
         minSdk = 24
         targetSdk = 36
-        versionCode = 185
-        versionName = "1.6.5"
+        versionCode = 188
+        versionName = "1.6.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

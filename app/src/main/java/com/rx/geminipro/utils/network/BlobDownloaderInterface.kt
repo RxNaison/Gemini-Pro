@@ -7,6 +7,7 @@ import android.webkit.JavascriptInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import java.net.URLDecoder
 
 private const val TAG = "BlobDownloader"
 
@@ -15,8 +16,14 @@ class BlobDownloaderInterface() {
     @JavascriptInterface
     fun processBlobData(dataUrl: String, filename: String) : File? {
         try {
-            val base64EncodedData = dataUrl.substringAfter("base64,")
-            val data = Base64.decode(base64EncodedData, Base64.DEFAULT)
+            val isBase64 = dataUrl.contains(";base64")
+            val data = if(isBase64){
+                val base64EncodedData = dataUrl.substringAfter("base64,")
+                Base64.decode(base64EncodedData, Base64.DEFAULT)
+            } else {
+                val decodedText = URLDecoder.decode(dataUrl, "UTF-8")
+                decodedText.toByteArray(Charsets.UTF_8)
+            }
 
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!downloadsDir.exists()) {
