@@ -1,4 +1,4 @@
-package com.rx.geminiuncen.utils.network
+package com.rx.geminipro.utils.network
 
 import android.os.Environment
 import android.util.Base64
