@@ -1,4 +1,4 @@
-package com.rx.geminipro.utils.network
+package com.rx.geminiuncen.utils.network
 
 import android.os.Environment
 import android.util.Base64
@@ -21,7 +21,8 @@ class BlobDownloaderInterface() {
                 val base64EncodedData = dataUrl.substringAfter("base64,")
                 Base64.decode(base64EncodedData, Base64.DEFAULT)
             } else {
-                val decodedText = URLDecoder.decode(dataUrl, "UTF-8")
+                val utf8EncodedData = dataUrl.substringAfter("utf-8,")
+                val decodedText = URLDecoder.decode(utf8EncodedData, "UTF-8")
                 decodedText.toByteArray(Charsets.UTF_8)
             }
 
