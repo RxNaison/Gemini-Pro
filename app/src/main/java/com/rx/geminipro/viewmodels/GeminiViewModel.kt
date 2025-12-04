@@ -48,8 +48,10 @@ class GeminiViewModel @Inject constructor(
             is GeminiUiEvent.ApplicationReady -> handleApplicationReady()
             is GeminiUiEvent.OpenDocsClicked -> openDocs()
             is GeminiUiEvent.KeepScreenOnToggled -> keepScreenOn()
-            is GeminiUiEvent.SplitScreenToggled -> _uiState.update {
-                it.copy(isSplitScreen = !it.isSplitScreen)
+            is GeminiUiEvent.OpenFlowClicked -> {
+                viewModelScope.launch {
+                    _sideEffectChannel.send(GeminiSideEffect.LoadUrl("https://labs.google/fx/tools/flow"))
+                }
             }
             is GeminiUiEvent.SaveToFileClicked -> saveToFile()
             is GeminiUiEvent.OpenInBrowserClicked -> openInBrowser()

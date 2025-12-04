@@ -3,14 +3,12 @@ package com.rx.geminipro.screens
 import android.app.Activity
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -27,10 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rx.geminipro.R
@@ -108,11 +104,17 @@ fun GeminiProScreen(
             val currentWebView = webView ?: return@collect
             when (effect) {
                 is GeminiSideEffect.LaunchIntent -> context.startActivity(effect.intent)
-                is GeminiSideEffect.ShowToast -> Toast.makeText(context, effect.message, Toast.LENGTH_SHORT).show()
+                is GeminiSideEffect.ShowToast -> Toast.makeText(
+                    context,
+                    effect.message,
+                    Toast.LENGTH_SHORT
+                ).show()
+
                 is GeminiSideEffect.LaunchSaveToFile -> documentLauncher.launch("gemini-note.txt")
                 is GeminiSideEffect.WebViewGoBack -> currentWebView.goBack()
                 is GeminiSideEffect.WebViewReload -> currentWebView.reload()
                 is GeminiSideEffect.WebViewGoForward -> currentWebView.goForward()
+                is GeminiSideEffect.LoadUrl -> currentWebView.loadUrl(effect.url)
             }
         }
     }
@@ -150,23 +152,22 @@ fun GeminiProScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        WebViewLayout(
-            uiState = uiState,
-            filePickerLauncher = filePickerLauncher,
+        GeminiWebViewer(
+            modifier = modifier.fillMaxSize(),
             filePathCallbackState = filePathCallbackState,
+            filePickerLauncher = filePickerLauncher,
             onWebViewCreated = { createdWebView ->
                 webView = createdWebView
                 viewModel.onEvent(GeminiUiEvent.ApplicationReady)
             },
-            onPageFinished = { finishedWebView ->
+            onPageFinished = { webView, _ ->
                 viewModel.onEvent(
                     GeminiUiEvent.WebViewNavigated(
-                        canGoBack = finishedWebView.canGoBack(),
-                        url = finishedWebView.url
+                        canGoBack = webView.canGoBack(),
+                        url = webView.url
                     )
                 )
             }
-
         )
 
         ReloadIndicator(isLoading = uiState.isReloading)
@@ -207,82 +208,6 @@ fun GeminiProScreen(
             onClose = { showHtmlPreview = false }
         )
     }
-}
-
-@Composable
-private fun WebViewLayout(
-    uiState: GeminiUiState,
-    filePickerLauncher: ActivityResultLauncher<Intent>,
-    filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
-    onWebViewCreated: (webView: WebView) -> Unit,
-    onPageFinished: (webView: WebView) -> Unit
-) {
-    val configuration = LocalConfiguration.current
-    val windowInfo = LocalWindowInfo.current
-    val windowWidth = with(LocalDensity.current) { windowInfo.containerSize.width.toDp() }
-    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-    val isLargeScreen = windowWidth > 600.dp
-    val useHorizontalLayout = uiState.isSplitScreen && (isLandscape || isLargeScreen)
-
-    val layoutModifier = Modifier.fillMaxSize()
-
-    if (useHorizontalLayout) {
-        Row(modifier = layoutModifier) {
-            WebViewWrapper(
-                modifier = Modifier.weight(1f),
-                filePickerLauncher = filePickerLauncher,
-                filePathCallbackState = filePathCallbackState,
-                onWebViewCreated = onWebViewCreated,
-                onPageFinished = onPageFinished
-            )
-            WebViewWrapper(
-                modifier = Modifier.weight(1f),
-                filePickerLauncher = filePickerLauncher,
-                filePathCallbackState = filePathCallbackState,
-                onWebViewCreated = onWebViewCreated,
-                onPageFinished = onPageFinished
-            )
-        }
-    } else {
-        Column(modifier = layoutModifier) {
-            if (uiState.isSplitScreen) {
-                WebViewWrapper(
-                    modifier = Modifier.weight(1f),
-                    filePickerLauncher = filePickerLauncher,
-                    filePathCallbackState = filePathCallbackState,
-                    onWebViewCreated = onWebViewCreated,
-                    onPageFinished = onPageFinished
-                )
-            }
-            WebViewWrapper(
-                modifier = Modifier.weight(1f),
-                filePickerLauncher = filePickerLauncher,
-                filePathCallbackState = filePathCallbackState,
-                onWebViewCreated = onWebViewCreated,
-                onPageFinished = onPageFinished
-            )
-        }
-    }
-}
-
-@Composable
-private fun WebViewWrapper(
-    modifier: Modifier = Modifier,
-    filePickerLauncher: ActivityResultLauncher<Intent>,
-    filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
-    onWebViewCreated: (webView: WebView) -> Unit,
-    onPageFinished: (webView: WebView) -> Unit
-) {
-    GeminiWebViewer(
-        modifier = modifier,
-        filePathCallbackState = filePathCallbackState,
-        filePickerLauncher = filePickerLauncher,
-        onWebViewCreated = onWebViewCreated,
-        onPageFinished = { webView, _ ->
-            onPageFinished(webView)
-        }
-    )
-
 }
 
 @Composable
@@ -362,7 +287,7 @@ private fun rememberMenuItems(onEvent: (GeminiUiEvent) -> Unit, isMenuLeft: Bool
         listOf(
             MenuItemData(R.drawable.google_docs, "Open Docs") { onEvent(GeminiUiEvent.OpenDocsClicked) },
             MenuItemData(R.drawable.coffee_cup, "Caffeine") { onEvent(GeminiUiEvent.KeepScreenOnToggled) },
-            MenuItemData(R.drawable.split_screen, "Split Screen") { onEvent(GeminiUiEvent.SplitScreenToggled) },
+            MenuItemData(R.drawable.split_screen, "Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
             MenuItemData(R.drawable.note_text, "Save To File") { onEvent(GeminiUiEvent.SaveToFileClicked) },
             MenuItemData(R.drawable.baseline_open_in_browser_24, "Open in Browser") { onEvent(GeminiUiEvent.OpenInBrowserClicked) },
             MenuItemData(R.drawable.baseline_share_24, "Share Page") { onEvent(GeminiUiEvent.SharePageClicked) },

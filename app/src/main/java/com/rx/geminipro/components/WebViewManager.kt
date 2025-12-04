@@ -69,6 +69,16 @@ class WebViewManager(
 
         override fun onPageFinished(view: WebView, url: String) {
             super.onPageFinished(view, url)
+
+            val preventRevokeScript = """
+            window.URL.revokeObjectURL = function(url) {
+                console.log("GeminiPro: Blocked revocation of " + url);
+                // Do nothing! Keep the blob alive.
+            };
+        """.trimIndent()
+
+            view.evaluateJavascript(preventRevokeScript, null)
+
             onPageFinished.invoke(view, url)
         }
 

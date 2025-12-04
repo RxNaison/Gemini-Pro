@@ -4,7 +4,6 @@ import android.content.Intent
 
 data class GeminiUiState(
     val isApplicationReady: Boolean = false,
-    val isSplitScreen: Boolean = false,
     val isKeepScreenOn: Boolean = false,
     val isMenuLeft: Boolean = false,
     val isKeyboardVisible: Boolean = false,
@@ -20,7 +19,7 @@ sealed interface GeminiUiEvent {
     object ApplicationReady : GeminiUiEvent
     object OpenDocsClicked : GeminiUiEvent
     object KeepScreenOnToggled : GeminiUiEvent
-    object SplitScreenToggled : GeminiUiEvent
+    object OpenFlowClicked : GeminiUiEvent
     object SaveToFileClicked : GeminiUiEvent
     object OpenInBrowserClicked : GeminiUiEvent
     object SharePageClicked : GeminiUiEvent
@@ -36,6 +35,7 @@ sealed interface GeminiUiEvent {
 sealed interface GeminiSideEffect {
     data class LaunchIntent(val intent: Intent) : GeminiSideEffect
     data class ShowToast(val message: String) : GeminiSideEffect
+    data class LoadUrl(val url: String) : GeminiSideEffect
     object LaunchSaveToFile : GeminiSideEffect
     object WebViewGoBack : GeminiSideEffect
     object WebViewReload : GeminiSideEffect
