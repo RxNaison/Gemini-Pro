@@ -13,9 +13,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -152,7 +149,6 @@ fun GeminiProScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .navigationBarsPadding()
     ) {
         WebViewLayout(
             uiState = uiState,
@@ -230,14 +226,13 @@ private fun WebViewLayout(
 
     val layoutModifier = Modifier.fillMaxSize()
     
-    val splitModifier = Modifier.statusBarsPadding()
+    val splitModifier = Modifier
     val mainModifier = if(uiState.isSplitScreen) Modifier else splitModifier
 
     if (useHorizontalLayout) {
         Row(modifier = layoutModifier) {
             WebViewWrapper(
                 modifier = splitModifier.weight(1f),
-                uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,
@@ -245,7 +240,6 @@ private fun WebViewLayout(
             )
             WebViewWrapper(
                 modifier = splitModifier.weight(1f),
-                uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,
@@ -257,7 +251,6 @@ private fun WebViewLayout(
             if (uiState.isSplitScreen) {
                 WebViewWrapper(
                     modifier = splitModifier.weight(1f),
-                    uiState = uiState,
                     filePickerLauncher = filePickerLauncher,
                     filePathCallbackState = filePathCallbackState,
                     onWebViewCreated = onWebViewCreated,
@@ -266,7 +259,6 @@ private fun WebViewLayout(
             }
             WebViewWrapper(
                 modifier = mainModifier.weight(1f),
-                uiState = uiState,
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,
@@ -279,35 +271,13 @@ private fun WebViewLayout(
 @Composable
 private fun WebViewWrapper(
     modifier: Modifier = Modifier,
-    uiState: GeminiUiState,
     filePickerLauncher: ActivityResultLauncher<Intent>,
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
     onWebViewCreated: (webView: WebView) -> Unit,
     onPageFinished: (webView: WebView) -> Unit
 ) {
-    val density = LocalDensity.current
-
-    val targetOffset = if (uiState.isKeyboardVisible && uiState.activeWebViewUrl?.startsWith("https://aistudio.google.com") == true) {
-        val keyboardHeightPx = WindowInsets.ime.getBottom(density)
-        val navBarHeightPx = WindowInsets.navigationBars.getBottom(density)
-        val offsetPx = navBarHeightPx - keyboardHeightPx
-        with(density) { offsetPx.toDp() }
-    } else {
-        0.dp
-    }
-
-    val animatedOffset by animateDpAsState(
-        targetValue = targetOffset,
-        animationSpec = if (uiState.isKeyboardVisible) {
-            snap()
-        } else {
-            tween(durationMillis = 200, easing = FastOutSlowInEasing)
-        },
-        label = "keyboardOffsetAnimation"
-    )
-
     GeminiWebViewer(
-        modifier = modifier.offset(y = animatedOffset),
+        modifier = modifier,
         filePathCallbackState = filePathCallbackState,
         filePickerLauncher = filePickerLauncher,
         onWebViewCreated = onWebViewCreated,
@@ -315,6 +285,7 @@ private fun WebViewWrapper(
             onPageFinished(webView)
         }
     )
+
 }
 
 @Composable
@@ -431,7 +402,9 @@ private fun DialogButton(
 private fun BoxScope.ReloadIndicator(isLoading: Boolean) {
     AnimatedVisibility(
         visible = isLoading,
-        modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding(),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding(),
         enter = fadeIn(),
         exit = fadeOut()
     ) {

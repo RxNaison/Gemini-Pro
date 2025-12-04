@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.WindowCompat
 import com.rx.geminipro.viewmodels.GeminiViewModel
 import com.rx.geminipro.ui.theme.GeminiProTheme
 import com.rx.geminipro.screens.GeminiProScreen
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
             GeminiProTheme(darkTheme = true) {
