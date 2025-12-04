@@ -8,7 +8,7 @@ A lightweight WebView-based application for accessing **Google AI Studio** with 
 * Instant HTML page viewing when copying generated HTML code
 * The ability to immediately save the copied text to a text file
 * **Caffeine mode** - does not allow the phone to turn off the screen
-* **Split Screen** - allows you to work in two dialog windows at once in parallel
+* Press and hold to download image or video
 
 # How to use
 
@@ -25,8 +25,6 @@ Once permissions are set, you can start using the app immediately.
 
 > Note:
 This step is required due to Google’s security policy, which cannot be bypassed.
-The same policy also prevents certain downloads within the app, except for audio files.
-Generated videos can be saved directly to your Google Drive.
 
 # Screenshots
 
