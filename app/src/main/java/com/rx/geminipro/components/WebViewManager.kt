@@ -3,21 +3,16 @@ package com.rx.geminipro.components
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.DownloadManager
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.DownloadListener
-import android.webkit.MimeTypeMap
 import android.webkit.PermissionRequest
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
@@ -29,14 +24,10 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.ComponentActivity
-import androidx.core.app.NotificationCompat
-import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import com.rx.geminipro.R
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
-import java.io.File
 import java.lang.ref.WeakReference
 
 
@@ -127,14 +118,15 @@ class WebViewManager(
             customView = view
             customViewCallback = callback
             originalOrientation = currentActivity.requestedOrientation
+            currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
             val decorView = currentActivity.window.decorView as ViewGroup
             fullscreenContainer = FrameLayout(currentActivity).apply {
                 setBackgroundColor(Color.BLACK)
                 addView(customView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             }
-            decorView.addView(fullscreenContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
+            decorView.addView(fullscreenContainer, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setFullscreen(true, currentActivity)
 
             onBackPressedCallback = object : OnBackPressedCallback(true) {
@@ -148,14 +140,13 @@ class WebViewManager(
             if (customView == null) return
 
             setFullscreen(false, currentActivity)
-
             (fullscreenContainer?.parent as? ViewGroup)?.removeView(fullscreenContainer)
 
             fullscreenContainer = null
             customView = null
             customViewCallback?.onCustomViewHidden()
 
-            currentActivity.requestedOrientation = originalOrientation
+            currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
             onBackPressedCallback?.remove()
             onBackPressedCallback = null
@@ -184,12 +175,44 @@ class WebViewManager(
             }
         }
     }
-    var onBlobDownloadRequested: (url: String, contentDisposition: String?, mimeType: String?) -> Unit = { _, _, _ -> }
-    val downloadListener: DownloadListener = DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-        when {
-            url.startsWith("blob:") -> onBlobDownloadRequested(url, contentDisposition, mimeType)
-            url.startsWith("data:") -> handleDataUrlDownload(url)
-            else -> handleStandardDownload(url, userAgent, contentDisposition, mimeType)
+
+    fun getDownloadListener(webView: WebView): DownloadListener {
+        return DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+            when {
+                url.startsWith("blob:") -> {
+                    val jsScript = """
+                        (function() {
+                            var xhr = new XMLHttpRequest();
+                            xhr.open('GET', '$url', true);
+                            xhr.responseType = 'blob';
+                            xhr.onload = function(e) {
+                                if (this.status == 200) {
+                                    var blob = this.response;
+                                    var reader = new FileReader();
+                                    reader.readAsDataURL(blob);
+                                    reader.onloadend = function() {
+                                        var base64data = reader.result;
+                                        // Call the Android Interface
+                                        // 'AndroidBlob' is the name we will register in the next step
+                                        AndroidBlob.processBlobData(base64data, blob.type);
+                                    }
+                                }
+                            };
+                            xhr.send();
+                        })();
+                    """.trimIndent()
+
+                    webView.evaluateJavascript(jsScript, null)
+                }
+
+                url.startsWith("data:") -> {
+                    val cleanUrl = url.substringAfter("base64,")
+                    val extractedMime = url.substringAfter("data:").substringBefore(";")
+                    BlobDownloaderInterface(context).processBlobData(cleanUrl, extractedMime)
+                }
+
+                else -> handleStandardDownload(url, userAgent, contentDisposition, mimeType)
+            }
         }
     }
 
@@ -227,24 +250,6 @@ class WebViewManager(
         }
     }
 
-    private fun handleDataUrlDownload(url: String) {
-        try {
-            val downloader = BlobDownloaderInterface()
-            val header = url.substringBefore(',')
-            val mimeType = header.substringAfter("data:").substringBefore(';')
-            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: mimeType.substringAfter("/")
-            val filename = "download_${System.currentTimeMillis()}.$extension"
-
-            val file = downloader.processBlobData(url, filename)
-            file?.let {
-                showDownloadCompleteNotification(file, mimeType)
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error processing data URL download", e)
-            onShowToast("Error processing download: ${e.message}")
-        }
-    }
-
     private fun handleStandardDownload(url: String, userAgent: String, contentDisposition: String, mimeType: String) {
         try {
             val request = DownloadManager.Request(url.toUri()).apply {
@@ -264,54 +269,5 @@ class WebViewManager(
             Log.e(TAG, "Download failed for URL: $url", e)
             onShowToast("Download failed: ${e.message}")
         }
-    }
-
-    private fun showDownloadCompleteNotification(file: File, mimeType: String) {
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val channelId = "blob_downloads"
-
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.O)
-        {
-            val channel =
-                NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_HIGH)
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val fileUri: Uri = try {
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.provider",
-                file
-            )
-        } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "FileProvider error: ${e.message}")
-            onShowToast("Error creating file URI for notification")
-            return
-        }
-
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(fileUri, mimeType)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        if (intent.resolveActivity(context.packageManager) == null) {
-            Log.w(TAG, "No activity found to handle VIEW intent for type $mimeType")
-        }
-
-        val pendingIntentFlags =
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        val pendingIntent = PendingIntent.getActivity(context, 0, intent, pendingIntentFlags)
-
-        val notification = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.google_gemini_icon)
-            .setContentTitle("Download complete")
-            .setContentText(file.name)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .build()
-
-        val notificationId = System.currentTimeMillis().toInt()
-        notificationManager.notify(notificationId, notification)
     }
 }

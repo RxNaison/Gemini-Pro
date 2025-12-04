@@ -225,21 +225,18 @@ private fun WebViewLayout(
     val useHorizontalLayout = uiState.isSplitScreen && (isLandscape || isLargeScreen)
 
     val layoutModifier = Modifier.fillMaxSize()
-    
-    val splitModifier = Modifier
-    val mainModifier = if(uiState.isSplitScreen) Modifier else splitModifier
 
     if (useHorizontalLayout) {
         Row(modifier = layoutModifier) {
             WebViewWrapper(
-                modifier = splitModifier.weight(1f),
+                modifier = Modifier.weight(1f),
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,
                 onPageFinished = onPageFinished
             )
             WebViewWrapper(
-                modifier = splitModifier.weight(1f),
+                modifier = Modifier.weight(1f),
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,
@@ -250,7 +247,7 @@ private fun WebViewLayout(
         Column(modifier = layoutModifier) {
             if (uiState.isSplitScreen) {
                 WebViewWrapper(
-                    modifier = splitModifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                     filePickerLauncher = filePickerLauncher,
                     filePathCallbackState = filePathCallbackState,
                     onWebViewCreated = onWebViewCreated,
@@ -258,7 +255,7 @@ private fun WebViewLayout(
                 )
             }
             WebViewWrapper(
-                modifier = mainModifier.weight(1f),
+                modifier = Modifier.weight(1f),
                 filePickerLauncher = filePickerLauncher,
                 filePathCallbackState = filePathCallbackState,
                 onWebViewCreated = onWebViewCreated,

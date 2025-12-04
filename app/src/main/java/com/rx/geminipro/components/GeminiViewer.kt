@@ -70,15 +70,21 @@ fun GeminiWebViewer(
                     )
                     setBackgroundColor(Color.Transparent.toArgb())
 
+                    addJavascriptInterface(
+                        com.rx.geminipro.utils.network.BlobDownloaderInterface(context),
+                        "AndroidBlob"
+                    )
+
                     webViewManager.let { manager ->
                         webViewClient = manager.webViewClient
                         webChromeClient = manager.webChromeClient
-                        setDownloadListener(manager.downloadListener)
+                        setDownloadListener(manager.getDownloadListener(this))
                     }
 
                     settings.apply {
                         javaScriptEnabled = true
                         domStorageEnabled = true
+                        mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         mediaPlaybackRequiresUserGesture = false
                         cacheMode = WebSettings.LOAD_DEFAULT
                         allowFileAccess = true
@@ -94,6 +100,29 @@ fun GeminiWebViewer(
                         ),
                         "Android"
                     )
+
+                    setOnCreateContextMenuListener { menu, v, menuInfo ->
+                        val result = (v as WebView).hitTestResult
+
+                        if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
+                            result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+
+                            val imageUrl = result.extra
+
+                            if (imageUrl != null) {
+                                menu.add("Save Image").setOnMenuItemClickListener {
+                                    webViewManager.getDownloadListener(this).onDownloadStart(
+                                        imageUrl,
+                                        settings.userAgentString,
+                                        "attachment",
+                                        "image/png",
+                                        0
+                                    )
+                                    true
+                                }
+                            }
+                        }
+                    }
 
                     loadUrl(initialUrl)
                 }

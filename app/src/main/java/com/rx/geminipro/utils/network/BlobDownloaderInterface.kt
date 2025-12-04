@@ -1,48 +1,99 @@
 package com.rx.geminipro.utils.network
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.util.Base64
 import android.util.Log
 import android.webkit.JavascriptInterface
+import android.webkit.MimeTypeMap
+import android.widget.Toast
+import androidx.core.app.NotificationCompat
+import androidx.core.content.FileProvider
+import com.rx.geminipro.R
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
-import java.net.URLDecoder
 
 private const val TAG = "BlobDownloader"
 
+class BlobDownloaderInterface(private val context: Context) {
 
-class BlobDownloaderInterface() {
     @JavascriptInterface
-    fun processBlobData(dataUrl: String, filename: String) : File? {
+    fun processBlobData(base64Data: String, mimeType: String) {
         try {
-            val isBase64 = dataUrl.contains(";base64")
-            val data = if(isBase64){
-                val base64EncodedData = dataUrl.substringAfter("base64,")
-                Base64.decode(base64EncodedData, Base64.DEFAULT)
+            val cleanBase64 = if (base64Data.contains(",")) {
+                base64Data.substringAfter(",")
             } else {
-                val utf8EncodedData = dataUrl.substringAfter("utf-8,")
-                val decodedText = URLDecoder.decode(utf8EncodedData, "UTF-8")
-                decodedText.toByteArray(Charsets.UTF_8)
+                base64Data
             }
+
+            val decodedBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
+
+            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
+            val filename = "gemini_image_${System.currentTimeMillis()}.$extension"
 
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-            if (!downloadsDir.exists()) {
-                downloadsDir.mkdirs()
-            }
+            if (!downloadsDir.exists()) downloadsDir.mkdirs()
+
             val file = File(downloadsDir, filename)
+            FileOutputStream(file).use { it.write(decodedBytes) }
 
-            FileOutputStream(file).use { fos ->
-                fos.write(data)
-            }
-            Log.d(TAG, "File saved successfully to ${file.absolutePath}")
+            Log.d(TAG, "File saved: ${file.absolutePath}")
 
-            return file
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to save blob data to file.", e)
-        } catch (e: IllegalArgumentException) {
-            Log.e(TAG, "Invalid Base64 string from data URL.", e)
+            showToast("Saved to Downloads: $filename")
+            showDownloadCompleteNotification(file, mimeType)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Blob download failed", e)
+            showToast("Download failed: ${e.message}")
         }
-        return null
+    }
+
+    private fun showToast(message: String) {
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun showDownloadCompleteNotification(file: File, mimeType: String) {
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val channelId = "blob_downloads"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(channelId, "Downloads", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val fileUri: Uri = try {
+            FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+        } catch (e: Exception) {
+            Log.e(TAG, "FileProvider error", e)
+            return
+        }
+
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(fileUri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(context, channelId)
+            .setSmallIcon(R.drawable.google_gemini_icon)
+            .setContentTitle("Image Saved")
+            .setContentText(file.name)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }
