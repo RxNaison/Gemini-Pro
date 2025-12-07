@@ -156,6 +156,7 @@ fun GeminiProScreen(
             modifier = modifier.fillMaxSize(),
             filePathCallbackState = filePathCallbackState,
             filePickerLauncher = filePickerLauncher,
+            isVideoSelectionMode = uiState.isVideoSelectionMode,
             onWebViewCreated = { createdWebView ->
                 webView = createdWebView
             },
@@ -171,6 +172,8 @@ fun GeminiProScreen(
         )
 
         ReloadIndicator(isLoading = uiState.isReloading)
+
+        VideoModeIndicator(uiState.isVideoSelectionMode)
 
         PreviewButtons(
             clipboardContentType = uiState.clipboardContentType,
@@ -207,6 +210,35 @@ fun GeminiProScreen(
             onBack = { showHtmlPreview = false },
             onClose = { showHtmlPreview = false }
         )
+    }
+}
+
+@Composable
+private fun BoxScope.VideoModeIndicator(isVisible: Boolean){
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = slideInVertically() + fadeIn(),
+        exit = slideOutVertically() + fadeOut(),
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .fillMaxWidth()
+            .statusBarsPadding()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(70.dp)
+                .background(Color(0xFF2196F3).copy(alpha = 0.8f))
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Text(
+                text = "Tap and hold on video to download it",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -287,9 +319,9 @@ private fun rememberMenuItems(onEvent: (GeminiUiEvent) -> Unit, isMenuLeft: Bool
         listOf(
             MenuItemData(R.drawable.google_docs, "Open Docs") { onEvent(GeminiUiEvent.OpenDocsClicked) },
             MenuItemData(R.drawable.coffee_cup, "Caffeine") { onEvent(GeminiUiEvent.KeepScreenOnToggled) },
-            MenuItemData(R.drawable.split_screen, "Google Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
+            MenuItemData(R.drawable.google_flow_icon, "Google Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
             MenuItemData(R.drawable.note_text, "Save To File") { onEvent(GeminiUiEvent.SaveToFileClicked) },
-            MenuItemData(R.drawable.baseline_open_in_browser_24, "Open in Browser") { onEvent(GeminiUiEvent.OpenInBrowserClicked) },
+            MenuItemData(R.drawable.baseline_save_alt_24, "Download Video") { onEvent(GeminiUiEvent.ToggleVideoSelectionMode) },
             MenuItemData(R.drawable.baseline_share_24, "Share Page") { onEvent(GeminiUiEvent.SharePageClicked) },
             MenuItemData(R.drawable.baseline_link_24, "Copy Link") { onEvent(GeminiUiEvent.CopyLinkClicked) },
             MenuItemData(R.drawable.baseline_replay_circle_filled_24, "Reload Page") { onEvent(GeminiUiEvent.ReloadPageClicked) },

@@ -10,7 +10,8 @@ data class GeminiUiState(
     val clipboardContentType: ClipboardContentType = ClipboardContentType.NONE,
     val activeWebViewUrl: String? = null,
     val canWebViewGoBack: Boolean = false,
-    val isReloading: Boolean = false
+    val isReloading: Boolean = false,
+    val isVideoSelectionMode: Boolean = false
 )
 
 enum class ClipboardContentType { NONE, DIAGRAM, HTML }
@@ -30,6 +31,7 @@ sealed interface GeminiUiEvent {
     object BackButtonPressed : GeminiUiEvent
     data class KeyboardVisibilityChanged(val isVisible: Boolean) : GeminiUiEvent
     data class WebViewNavigated(val canGoBack: Boolean, val url: String?) : GeminiUiEvent
+    object ToggleVideoSelectionMode : GeminiUiEvent
 }
 
 sealed interface GeminiSideEffect {

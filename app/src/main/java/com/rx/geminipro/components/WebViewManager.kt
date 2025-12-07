@@ -128,7 +128,6 @@ class WebViewManager(
             customView = view
             customViewCallback = callback
             originalOrientation = currentActivity.requestedOrientation
-            currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
 
             val decorView = currentActivity.window.decorView as ViewGroup
             fullscreenContainer = FrameLayout(currentActivity).apply {
@@ -155,8 +154,6 @@ class WebViewManager(
             fullscreenContainer = null
             customView = null
             customViewCallback?.onCustomViewHidden()
-
-            currentActivity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
             onBackPressedCallback?.remove()
             onBackPressedCallback = null

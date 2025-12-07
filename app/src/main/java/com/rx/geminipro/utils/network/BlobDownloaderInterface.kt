@@ -35,7 +35,7 @@ class BlobDownloaderInterface(private val context: Context) {
             val decodedBytes = Base64.decode(cleanBase64, Base64.DEFAULT)
 
             val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
-            val filename = "gemini_download_${System.currentTimeMillis()}.$extension"
+            val filename = "geminipro_download_${System.currentTimeMillis()}.$extension"
 
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!downloadsDir.exists()) downloadsDir.mkdirs()

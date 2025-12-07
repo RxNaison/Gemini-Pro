@@ -65,6 +65,11 @@ class GeminiViewModel @Inject constructor(
                 _uiState.update { it.copy(isKeyboardVisible = event.isVisible) }
             }
             is GeminiUiEvent.WebViewNavigated -> onWebViewNavigated(event.canGoBack, event.url)
+            is GeminiUiEvent.ToggleVideoSelectionMode -> {
+                _uiState.update {
+                    it.copy(isVideoSelectionMode = !it.isVideoSelectionMode)
+                }
+            }
         }
     }
 

@@ -3,6 +3,7 @@ package com.rx.geminipro.components
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.text.Selection
 import android.util.Log
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.ValueCallback
@@ -14,7 +15,9 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -29,12 +32,15 @@ fun GeminiWebViewer(
     modifier: Modifier,
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
     filePickerLauncher: ActivityResultLauncher<Intent>?,
+    isVideoSelectionMode: Boolean,
     onWebViewCreated: (WebView) -> Unit,
     onPageFinished: (WebView, String) -> Unit
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current as ComponentActivity
     val initialUrl = "https://aistudio.google.com/u/0/prompts/new_chat"
+
+    val currentVideoMode by rememberUpdatedState(isVideoSelectionMode)
 
     var lastTouchX = 0
     var lastTouchY = 0
@@ -117,32 +123,14 @@ fun GeminiWebViewer(
                     setOnCreateContextMenuListener { menu, v, menuInfo ->
                         val result = (v as WebView).hitTestResult
 
-                        if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
-                            result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+                        if (currentVideoMode) {
+                            menu.add("Download Video Here").setOnMenuItemClickListener {
 
-                            val imageUrl = result.extra
+                                val density = resources.displayMetrics.density
+                                val cssX = lastTouchX / density
+                                val cssY = lastTouchY / density
 
-                            if (imageUrl != null) {
-                                menu.add("Save Image").setOnMenuItemClickListener {
-                                    webViewManager.getDownloadListener(this).onDownloadStart(
-                                        imageUrl,
-                                        settings.userAgentString,
-                                        "attachment",
-                                        "image/png",
-                                        0
-                                    )
-                                    true
-                                }
-                            }
-                        }
-
-                        menu.add("Download Video").setOnMenuItemClickListener {
-
-                            val density = resources.displayMetrics.density
-                            val cssX = lastTouchX / density
-                            val cssY = lastTouchY / density
-
-                            val js = """
+                                val js = """
                              (function() {
                                  var el = document.elementFromPoint($cssX, $cssY);
                                  // Walk up the tree in case we clicked a play button OVER the video
@@ -156,18 +144,47 @@ fun GeminiWebViewer(
                              })();
                          """.trimIndent()
 
-                            evaluateJavascript(js) { result ->
-                                val url = result?.replace("\"", "")
+                                evaluateJavascript(js) { result ->
+                                    val url = result?.replace("\"", "")
 
-                                if (!url.isNullOrEmpty() && url != "null") {
-                                    webViewManager.getDownloadListener(this).onDownloadStart(
-                                        url, settings.userAgentString, "video.mp4", "video/mp4", 0
-                                    )
-                                } else {
-                                    Toast.makeText(context, "No video found at this location", Toast.LENGTH_SHORT).show()
+                                    if (!url.isNullOrEmpty() && url != "null") {
+                                        webViewManager.getDownloadListener(this).onDownloadStart(
+                                            url,
+                                            settings.userAgentString,
+                                            "video.mp4",
+                                            "video/mp4",
+                                            0
+                                        )
+                                    } else {
+                                        Toast.makeText(
+                                            context,
+                                            "No video found at this location",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                true
+                            }
+                        }
+                        else{
+                            if (result.type == WebView.HitTestResult.IMAGE_TYPE ||
+                                result.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) {
+
+                                val imageUrl = result.extra
+
+                                if (imageUrl != null) {
+                                    menu.add("Save Image").setOnMenuItemClickListener {
+                                        webViewManager.getDownloadListener(this).onDownloadStart(
+                                            imageUrl,
+                                            settings.userAgentString,
+                                            "attachment",
+                                            "image/png",
+                                            0
+                                        )
+                                        true
+                                    }
                                 }
                             }
-                            true
                         }
                     }
 
