@@ -158,7 +158,6 @@ fun GeminiProScreen(
             filePickerLauncher = filePickerLauncher,
             onWebViewCreated = { createdWebView ->
                 webView = createdWebView
-                viewModel.onEvent(GeminiUiEvent.ApplicationReady)
             },
             onPageFinished = { webView, _ ->
                 viewModel.onEvent(
@@ -167,6 +166,7 @@ fun GeminiProScreen(
                         url = webView.url
                     )
                 )
+                viewModel.onEvent(GeminiUiEvent.ApplicationReady)
             }
         )
 
@@ -287,7 +287,7 @@ private fun rememberMenuItems(onEvent: (GeminiUiEvent) -> Unit, isMenuLeft: Bool
         listOf(
             MenuItemData(R.drawable.google_docs, "Open Docs") { onEvent(GeminiUiEvent.OpenDocsClicked) },
             MenuItemData(R.drawable.coffee_cup, "Caffeine") { onEvent(GeminiUiEvent.KeepScreenOnToggled) },
-            MenuItemData(R.drawable.split_screen, "Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
+            MenuItemData(R.drawable.split_screen, "Google Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
             MenuItemData(R.drawable.note_text, "Save To File") { onEvent(GeminiUiEvent.SaveToFileClicked) },
             MenuItemData(R.drawable.baseline_open_in_browser_24, "Open in Browser") { onEvent(GeminiUiEvent.OpenInBrowserClicked) },
             MenuItemData(R.drawable.baseline_share_24, "Share Page") { onEvent(GeminiUiEvent.SharePageClicked) },
