@@ -166,6 +166,9 @@ fun GeminiProScreen(
             onWebViewCreated = { createdWebView ->
                 webView = createdWebView
             },
+            onProgressChanged = { progress ->
+                viewModel.onEvent(GeminiUiEvent.LoadingProgressChanged(progress))
+            },
             onPageFinished = { webView, _ ->
                 viewModel.onEvent(
                     GeminiUiEvent.WebViewNavigated(
@@ -179,6 +182,8 @@ fun GeminiProScreen(
                 tempCameraUri = uri
             }
         )
+
+        BrowserProgressBar(progress = uiState.loadingProgress)
 
         ReloadIndicator(isLoading = uiState.isReloading)
 
@@ -218,6 +223,29 @@ fun GeminiProScreen(
             clipboardText = clipboardText,
             onBack = { showHtmlPreview = false },
             onClose = { showHtmlPreview = false }
+        )
+    }
+}
+
+@Composable
+fun BoxScope.BrowserProgressBar(progress: Int) {
+    val isVisible = progress in 1..99
+
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(),
+        exit = fadeOut(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .height(4.dp)
+            .align(Alignment.TopCenter)
+    ) {
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { progress / 100f },
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = Color.Transparent,
         )
     }
 }

@@ -33,6 +33,7 @@ fun GeminiWebViewer(
     filePickerLauncher: ActivityResultLauncher<Intent>?,
     isVideoSelectionMode: Boolean,
     onWebViewCreated: (WebView) -> Unit,
+    onProgressChanged: (Int) -> Unit,
     onPageFinished: (WebView, String) -> Unit,
     onCameraTmpFileCreated: (Uri) -> Unit
 ) {
@@ -63,6 +64,7 @@ fun GeminiWebViewer(
                     filePathCallbackState.value = null
                 }
             }
+            this.onProgressChanged = onProgressChanged
             this.onPageFinished = onPageFinished
             this.onPermissionRequest = { request -> request.grant(request.resources) }
             this.onCameraTmpFileCreated = { uri ->

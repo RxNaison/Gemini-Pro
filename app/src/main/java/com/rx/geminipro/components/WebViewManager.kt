@@ -51,6 +51,7 @@ class WebViewManager(
 
     var onPermissionRequest: (request: PermissionRequest) -> Unit = { it.deny() }
     var onCameraTmpFileCreated: (Uri) -> Unit = {}
+    var onProgressChanged: (Int) -> Unit = {}
 
     // --- Private State ---
 
@@ -213,8 +214,10 @@ class WebViewManager(
 
         override fun onProgressChanged(view: WebView?, newProgress: Int) {
             super.onProgressChanged(view, newProgress)
-
             val currentUrl = view?.url
+
+            onProgressChanged(newProgress)
+
             if (newProgress == 100 && currentUrl != null && currentUrl != lastUrl) {
                 lastUrl = currentUrl
                 onPageFinished.invoke(view, currentUrl)

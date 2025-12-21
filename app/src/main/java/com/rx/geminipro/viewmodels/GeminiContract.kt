@@ -11,6 +11,7 @@ data class GeminiUiState(
     val activeWebViewUrl: String? = null,
     val canWebViewGoBack: Boolean = false,
     val isReloading: Boolean = false,
+    val loadingProgress: Int = 0,
     val isVideoSelectionMode: Boolean = false
 )
 
@@ -31,6 +32,7 @@ sealed interface GeminiUiEvent {
     object BackButtonPressed : GeminiUiEvent
     data class KeyboardVisibilityChanged(val isVisible: Boolean) : GeminiUiEvent
     data class WebViewNavigated(val canGoBack: Boolean, val url: String?) : GeminiUiEvent
+    data class LoadingProgressChanged(val progress: Int) : GeminiUiEvent
     object ToggleVideoSelectionMode : GeminiUiEvent
 }
 
