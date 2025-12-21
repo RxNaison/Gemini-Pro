@@ -3,7 +3,6 @@ package com.rx.geminipro.components
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
-import android.text.Selection
 import android.util.Log
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.ValueCallback
@@ -34,13 +33,16 @@ fun GeminiWebViewer(
     filePickerLauncher: ActivityResultLauncher<Intent>?,
     isVideoSelectionMode: Boolean,
     onWebViewCreated: (WebView) -> Unit,
-    onPageFinished: (WebView, String) -> Unit
+    onPageFinished: (WebView, String) -> Unit,
+    onCameraTmpFileCreated: (Uri) -> Unit
 ) {
     val context = LocalContext.current
     val activity = LocalActivity.current as ComponentActivity
     val initialUrl = "https://aistudio.google.com/u/0/prompts/new_chat"
+    val spoofHeaders = mapOf("X-Requested-With" to "")
 
     val currentVideoMode by rememberUpdatedState(isVideoSelectionMode)
+    val currentCameraCallback by rememberUpdatedState(onCameraTmpFileCreated)
 
     var lastTouchX = 0
     var lastTouchY = 0
@@ -63,6 +65,9 @@ fun GeminiWebViewer(
             }
             this.onPageFinished = onPageFinished
             this.onPermissionRequest = { request -> request.grant(request.resources) }
+            this.onCameraTmpFileCreated = { uri ->
+                currentCameraCallback(uri)
+            }
         }
     }
 
@@ -188,7 +193,7 @@ fun GeminiWebViewer(
                         }
                     }
 
-                    loadUrl(initialUrl)
+                    loadUrl(initialUrl, spoofHeaders)
                 }
 
                 addView(webView)

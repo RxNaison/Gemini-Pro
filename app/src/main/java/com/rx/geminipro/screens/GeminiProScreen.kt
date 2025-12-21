@@ -53,6 +53,8 @@ fun GeminiProScreen(
     var clipboardText by remember { mutableStateOf("") }
     var isHighlightingMenu by remember { mutableStateOf(false) }
 
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+
 
     val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     LaunchedEffect(isKeyboardVisible) {
@@ -64,27 +66,31 @@ fun GeminiProScreen(
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (filePathCallbackState.value == null) {
-            return@rememberLauncherForActivityResult
-        }
+        if (filePathCallbackState.value == null) return@rememberLauncherForActivityResult
 
         val uris: Array<Uri> = if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            if (data?.clipData != null) {
-                val clipData = data.clipData!!
-                List(clipData.itemCount) { i ->
-                    clipData.getItemAt(i).uri
-                }.toTypedArray()
-            } else if (data?.data != null) {
+
+            if (data?.data != null) {
                 arrayOf(data.data!!)
-            } else {
+            }
+            else if (data?.clipData != null) {
+                val clip = data.clipData!!
+                List(clip.itemCount) { clip.getItemAt(it).uri }.toTypedArray()
+            }
+            else if (tempCameraUri != null) {
+                arrayOf(tempCameraUri!!)
+            }
+            else {
                 emptyArray()
             }
         } else {
             emptyArray()
         }
+
         filePathCallbackState.value?.onReceiveValue(uris)
         filePathCallbackState.value = null
+        tempCameraUri = null
     }
 
     // --- Document Launcher for "Save to File" ---
@@ -168,6 +174,9 @@ fun GeminiProScreen(
                     )
                 )
                 viewModel.onEvent(GeminiUiEvent.ApplicationReady)
+            },
+            onCameraTmpFileCreated = { uri ->
+                tempCameraUri = uri
             }
         )
 
@@ -233,7 +242,7 @@ private fun BoxScope.VideoModeIndicator(isVisible: Boolean){
             contentAlignment = Alignment.Center
         ) {
             androidx.compose.material3.Text(
-                text = "Tap and hold on video to download it",
+                text = "Tap and hold the video to download it",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold

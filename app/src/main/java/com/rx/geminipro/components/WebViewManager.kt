@@ -8,6 +8,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -24,10 +25,12 @@ import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.ComponentActivity
+import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
+import java.io.File
 import java.lang.ref.WeakReference
 
 
@@ -47,12 +50,14 @@ class WebViewManager(
     var onPageFinished: (view: WebView, url: String) -> Unit = { _, _ -> }
 
     var onPermissionRequest: (request: PermissionRequest) -> Unit = { it.deny() }
+    var onCameraTmpFileCreated: (Uri) -> Unit = {}
 
     // --- Private State ---
 
     private var lastUrl: String? = null
     private var lastFailedUrl: String? = null
     private val errorUrl = "file:///android_asset/webview_error.html"
+    private val spoofHeaders = mapOf("X-Requested-With" to "")
 
     // --- Core WebView Clients and Listeners ---
 
@@ -61,6 +66,10 @@ class WebViewManager(
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url.toString()
             return when {
+                url.startsWith("http://") || url.startsWith("https://") -> {
+                    view.loadUrl(url, spoofHeaders)
+                    true
+                }
                 url.startsWith("intent://") -> handleIntentUrl(url, view)
                 url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") || url.startsWith("market:") -> handleExternalAppUrl(url)
                 else -> false
@@ -105,8 +114,38 @@ class WebViewManager(
             filePathCallback: ValueCallback<Array<Uri>>,
             fileChooserParams: FileChooserParams
         ): Boolean {
-            val intent = fileChooserParams.createIntent()
-            onShowFileChooser(filePathCallback, intent)
+            var photoUri: Uri? = null
+            var captureIntent: Intent? = null
+
+            try {
+                val photoFile = File.createTempFile("gemini_cam_", ".jpg", context.cacheDir)
+
+                photoUri = FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.provider",
+                    photoFile
+                )
+
+                onCameraTmpFileCreated(photoUri)
+
+                captureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Unable to create camera temp file", e)
+            }
+
+            val galleryIntent = fileChooserParams.createIntent()
+
+            val chooserIntent = Intent(Intent.ACTION_CHOOSER)
+            chooserIntent.putExtra(Intent.EXTRA_INTENT, galleryIntent)
+            chooserIntent.putExtra(Intent.EXTRA_TITLE, "Upload Image")
+
+            if (captureIntent != null) {
+                chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(captureIntent))
+            }
+
+            onShowFileChooser(filePathCallback, chooserIntent)
             return true
         }
 
@@ -233,7 +272,7 @@ class WebViewManager(
             if (intent.resolveActivity(context.packageManager) != null) {
                 onStartActivity(intent)
             } else if (fallbackUrl != null) {
-                webView.loadUrl(fallbackUrl)
+                webView.loadUrl(fallbackUrl, spoofHeaders)
             } else {
                 onShowToast("Cannot handle this type of link.")
             }
