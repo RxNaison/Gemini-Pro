@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.rx.geminipro.utils.system.UpdateChecker
+import kotlinx.coroutines.flow.firstOrNull
 
 @HiltViewModel
 class GeminiViewModel @Inject constructor(
@@ -41,6 +43,7 @@ class GeminiViewModel @Inject constructor(
                 }
             }
         }
+        checkForUpdates()
     }
 
     fun onEvent(event: GeminiUiEvent){
@@ -75,6 +78,27 @@ class GeminiViewModel @Inject constructor(
                     it.copy(isVideoSelectionMode = !it.isVideoSelectionMode)
                 }
             }
+            is GeminiUiEvent.DismissUpdateDialog -> {
+                _uiState.update { it.copy(updateInfo = null) }
+            }
+            is GeminiUiEvent.UpdateClicked -> {
+                val url = UpdateChecker.getReleaseUrl()
+                viewModelScope.launch {
+                    _sideEffectChannel.send(GeminiSideEffect.LaunchIntent(
+                        Intent(Intent.ACTION_VIEW, url.toUri())
+                    ))
+                }
+                _uiState.update { it.copy(updateInfo = null) }
+            }
+            is GeminiUiEvent.SkipUpdateClicked -> {
+                val info = _uiState.value.updateInfo
+                if (info != null) {
+                    viewModelScope.launch {
+                        userPreferencesRepository.setSkippedVersion(info.version)
+                    }
+                }
+                _uiState.update { it.copy(updateInfo = null) }
+            }
         }
     }
 
@@ -92,6 +116,17 @@ class GeminiViewModel @Inject constructor(
                 if (_uiState.value.clipboardContentType == type) {
                     _uiState.update { it.copy(clipboardContentType = ClipboardContentType.NONE) }
                 }
+            }
+        }
+    }
+
+    private fun checkForUpdates() {
+        viewModelScope.launch {
+            val updateInfo = UpdateChecker.checkForNewVersion()
+            val skippedVersion = userPreferencesRepository.skippedVersionFlow.firstOrNull()
+
+            if (updateInfo != null && updateInfo.version != skippedVersion) {
+                _uiState.update { it.copy(updateInfo = updateInfo) }
             }
         }
     }

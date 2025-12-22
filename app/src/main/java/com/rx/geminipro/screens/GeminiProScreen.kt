@@ -16,10 +16,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +25,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.rx.geminipro.R
 import com.rx.geminipro.components.*
@@ -224,6 +224,90 @@ fun GeminiProScreen(
             onBack = { showHtmlPreview = false },
             onClose = { showHtmlPreview = false }
         )
+
+        if (uiState.updateInfo != null) {
+            UpdateAvailableDialog(
+                newVersion = uiState.updateInfo!!.version,
+                changelog = uiState.updateInfo!!.changelog,
+                onDismiss = { viewModel.onEvent(GeminiUiEvent.DismissUpdateDialog) },
+                onDownload = { viewModel.onEvent(GeminiUiEvent.UpdateClicked) },
+                onSkipVersion = { viewModel.onEvent(GeminiUiEvent.SkipUpdateClicked) }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UpdateAvailableDialog(
+    newVersion: String,
+    changelog: String,
+    onDismiss: () -> Unit,
+    onDownload: () -> Unit,
+    onSkipVersion: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) }
+    ) {
+        Column(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Text(
+                modifier = Modifier.align(Alignment.CenterHorizontally).padding(vertical = 20.dp),
+                text = "New Update Available",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                modifier = Modifier.align(Alignment.Start).padding(start = 20.dp),
+                text = "Version $newVersion is available.\nWould you like to download it?"
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(Modifier.padding(horizontal = 20.dp)) {
+                Text(
+                    text = "What's New:",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Box(
+                    modifier = Modifier
+                        .heightIn(max = 200.dp)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                        .verticalScroll(androidx.compose.foundation.rememberScrollState())
+                ) {
+                    Text(
+                        text = changelog,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            Row (modifier = Modifier.navigationBarsPadding().padding(vertical = 20.dp).align(Alignment.CenterHorizontally)){
+                TextButton(
+                    onClick = onSkipVersion,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
+                ) {
+                    Text("Skip this version")
+                }
+
+                TextButton(onClick = onDismiss) {
+                    Text("Remind me later")
+                }
+
+                TextButton(onClick = onDownload) {
+                    Text("Download")
+                }
+            }
+        }
     }
 }
 
@@ -241,7 +325,7 @@ fun BoxScope.BrowserProgressBar(progress: Int) {
             .height(4.dp)
             .align(Alignment.TopCenter)
     ) {
-        androidx.compose.material3.LinearProgressIndicator(
+        LinearProgressIndicator(
             progress = { progress / 100f },
             modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.primary,
@@ -269,11 +353,11 @@ private fun BoxScope.VideoModeIndicator(isVisible: Boolean){
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            androidx.compose.material3.Text(
+            Text(
                 text = "Tap and hold the video to download it",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -380,12 +464,12 @@ private fun DialogButton(
     Button(
         onClick = onClick,
         modifier = modifier.padding(16.dp),
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+        colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.secondary
         )
     ) {
-        androidx.compose.material3.Text(text)
+        Text(text)
     }
 }
 

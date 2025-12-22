@@ -1,6 +1,7 @@
 package com.rx.geminipro.viewmodels
 
 import android.content.Intent
+import com.rx.geminipro.utils.system.UpdateInfo
 
 data class GeminiUiState(
     val isApplicationReady: Boolean = false,
@@ -12,7 +13,8 @@ data class GeminiUiState(
     val canWebViewGoBack: Boolean = false,
     val isReloading: Boolean = false,
     val loadingProgress: Int = 0,
-    val isVideoSelectionMode: Boolean = false
+    val isVideoSelectionMode: Boolean = false,
+    val updateInfo: UpdateInfo? = null
 )
 
 enum class ClipboardContentType { NONE, DIAGRAM, HTML }
@@ -34,6 +36,9 @@ sealed interface GeminiUiEvent {
     data class WebViewNavigated(val canGoBack: Boolean, val url: String?) : GeminiUiEvent
     data class LoadingProgressChanged(val progress: Int) : GeminiUiEvent
     object ToggleVideoSelectionMode : GeminiUiEvent
+    object DismissUpdateDialog : GeminiUiEvent
+    object UpdateClicked : GeminiUiEvent
+    object SkipUpdateClicked : GeminiUiEvent
 }
 
 sealed interface GeminiSideEffect {
