@@ -108,7 +108,7 @@ fun GeminiWebViewer(
                         javaScriptCanOpenWindowsAutomatically = true
                         setSupportMultipleWindows(false)
 
-                        userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36"
+                        userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Mobile Safari/537.36"
                     }
 
                     addJavascriptInterface(
