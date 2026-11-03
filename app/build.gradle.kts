@@ -13,8 +13,8 @@ android {
         applicationId = "com.rx.geminipro"
         minSdk = 24
         targetSdk = 37
-        versionCode = 208
-        versionName = "1.7.5"
+        versionCode = 209
+        versionName = "1.7.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -33,6 +33,10 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 

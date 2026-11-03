@@ -162,6 +162,7 @@ fun GeminiProScreen(
             filePathCallbackState = filePathCallbackState,
             filePickerLauncher = filePickerLauncher,
             isVideoSelectionMode = uiState.isVideoSelectionMode,
+            isAudioSelectionMode = uiState.isAudioSelectionMode,
             onWebViewCreated = { createdWebView ->
                 webView = createdWebView
             },
@@ -186,7 +187,10 @@ fun GeminiProScreen(
 
         ReloadIndicator(isLoading = uiState.isReloading)
 
-        VideoModeIndicator(uiState.isVideoSelectionMode)
+        VideoModeIndicator(
+            isVideoVisible = uiState.isVideoSelectionMode,
+            isAudioVisible = uiState.isAudioSelectionMode
+        )
 
         PreviewButtons(
             clipboardContentType = uiState.clipboardContentType,
@@ -260,7 +264,14 @@ fun BoxScope.BrowserProgressBar(progress: Int) {
 }
 
 @Composable
-private fun BoxScope.VideoModeIndicator(isVisible: Boolean){
+private fun BoxScope.VideoModeIndicator(
+    isVideoVisible: Boolean,
+    isAudioVisible: Boolean
+){
+    val isVisible = isVideoVisible || isAudioVisible
+    val textRes = if (isAudioVisible) R.string.tap_and_hold_audio else R.string.tap_and_hold_video
+    val bgColor = if (isAudioVisible) Color(0xFF4CAF50) else Color(0xFF2196F3)
+
     AnimatedVisibility(
         visible = isVisible,
         enter = slideInVertically() + fadeIn(),
@@ -274,12 +285,12 @@ private fun BoxScope.VideoModeIndicator(isVisible: Boolean){
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
-                .background(Color(0xFF2196F3).copy(alpha = 0.8f))
+                .background(bgColor.copy(alpha = 0.8f))
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = stringResource(R.string.tap_and_hold_video),
+                text = stringResource(textRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
@@ -368,6 +379,7 @@ private fun rememberMenuItems(onEvent: (GeminiUiEvent) -> Unit, isMenuLeft: Bool
             MenuItemData(R.drawable.google_flow_icon, "Google Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
             MenuItemData(R.drawable.note_text, "Save To File") { onEvent(GeminiUiEvent.SaveToFileClicked) },
             MenuItemData(R.drawable.baseline_save_alt_24, "Download Video") { onEvent(GeminiUiEvent.ToggleVideoSelectionMode) },
+            MenuItemData(R.drawable.baseline_save_alt_24, "Download Audio") { onEvent(GeminiUiEvent.ToggleAudioSelectionMode) },
             MenuItemData(R.drawable.baseline_share_24, "Share Page") { onEvent(GeminiUiEvent.SharePageClicked) },
             MenuItemData(R.drawable.baseline_link_24, "Copy Link") { onEvent(GeminiUiEvent.CopyLinkClicked) },
             MenuItemData(R.drawable.baseline_replay_circle_filled_24, "Reload Page") { onEvent(GeminiUiEvent.ReloadPageClicked) },

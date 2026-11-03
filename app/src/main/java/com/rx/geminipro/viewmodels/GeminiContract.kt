@@ -14,6 +14,7 @@ data class GeminiUiState(
     val isReloading: Boolean = false,
     val loadingProgress: Int = 0,
     val isVideoSelectionMode: Boolean = false,
+    val isAudioSelectionMode: Boolean = false,
     val updateInfo: UpdateInfo? = null
 )
 
@@ -36,6 +37,7 @@ sealed interface GeminiUiEvent {
     data class WebViewNavigated(val canGoBack: Boolean, val url: String?) : GeminiUiEvent
     data class LoadingProgressChanged(val progress: Int) : GeminiUiEvent
     object ToggleVideoSelectionMode : GeminiUiEvent
+    object ToggleAudioSelectionMode : GeminiUiEvent
     object DismissUpdateDialog : GeminiUiEvent
     object UpdateClicked : GeminiUiEvent
     object SkipUpdateClicked : GeminiUiEvent

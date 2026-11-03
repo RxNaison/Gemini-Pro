@@ -9,7 +9,8 @@
     <string name="show_diagram">Show Diagram</string>
     <string name="preview_html">Preview HTML</string>
     <string name="tap_and_hold_video">Tap and hold the video to download it</string>
-    <string name="no_video_found">No video found at this location</string>
+    <string name="tap_and_hold_audio">Tap and hold the audio to download it</string>
+    <string name="no_video_found">No media found at this location</string>
     <string name="link_copied">Link copied!</string>
     <string name="no_url_to_copy">No URL to copy.</string>
 </resources>

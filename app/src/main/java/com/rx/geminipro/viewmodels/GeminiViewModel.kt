@@ -76,7 +76,18 @@ class GeminiViewModel @Inject constructor(
             }
             is GeminiUiEvent.ToggleVideoSelectionMode -> {
                 _uiState.update {
-                    it.copy(isVideoSelectionMode = !it.isVideoSelectionMode)
+                    it.copy(
+                        isVideoSelectionMode = !it.isVideoSelectionMode,
+                        isAudioSelectionMode = false
+                    )
+                }
+            }
+            is GeminiUiEvent.ToggleAudioSelectionMode -> {
+                _uiState.update {
+                    it.copy(
+                        isAudioSelectionMode = !it.isAudioSelectionMode,
+                        isVideoSelectionMode = false
+                    )
                 }
             }
             is GeminiUiEvent.DismissUpdateDialog -> {

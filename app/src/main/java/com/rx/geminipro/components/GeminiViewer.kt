@@ -34,6 +34,7 @@ fun GeminiWebViewer(
     filePathCallbackState: MutableState<ValueCallback<Array<Uri>>?>,
     filePickerLauncher: ActivityResultLauncher<Intent>?,
     isVideoSelectionMode: Boolean,
+    isAudioSelectionMode: Boolean,
     onWebViewCreated: (WebView) -> Unit,
     onProgressChanged: (Int) -> Unit,
     onPageFinished: (WebView, String) -> Unit,
@@ -45,6 +46,7 @@ fun GeminiWebViewer(
     val spoofHeaders = mapOf("X-Requested-With" to "")
 
     val currentVideoMode by rememberUpdatedState(isVideoSelectionMode)
+    val currentAudioMode by rememberUpdatedState(isAudioSelectionMode)
     val currentCameraCallback by rememberUpdatedState(onCameraTmpFileCreated)
     val currentProgressCallback by rememberUpdatedState(onProgressChanged)
     val currentPageFinishedCallback by rememberUpdatedState(onPageFinished)
@@ -111,7 +113,7 @@ fun GeminiWebViewer(
                         mediaPlaybackRequiresUserGesture = false
                         cacheMode = WebSettings.LOAD_DEFAULT
                         allowFileAccess = false
-                        allowContentAccess = false
+                        allowContentAccess = true
                         javaScriptCanOpenWindowsAutomatically = true
                         setSupportMultipleWindows(false)
 
@@ -123,7 +125,8 @@ fun GeminiWebViewer(
                         } catch (_: Exception) {
                             "Chrome/144.0.0.0"
                         }
-                        userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersionToken Mobile Safari/537.36"                    }
+                        userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) $chromeVersionToken Mobile Safari/537.36"
+                    }
 
                     addJavascriptInterface(
                         WebAppInterface(WeakReference(this as WebView?)) { initialUrl },
@@ -142,8 +145,13 @@ fun GeminiWebViewer(
                         val hitTestWebView = v as WebView
                         val result = hitTestWebView.hitTestResult
 
-                        if (currentVideoMode) {
-                            menu.add("Download Video Here").setOnMenuItemClickListener {
+                        if (currentVideoMode || currentAudioMode) {
+                            val targetTag = if (currentAudioMode) "AUDIO" else "VIDEO"
+                            val menuTitle = if (currentAudioMode) "Download Audio Here" else "Download Video Here"
+                            val defaultExt = if (currentAudioMode) "mp3" else "mp4"
+                            val defaultMime = if (currentAudioMode) "audio/mpeg" else "video/mp4"
+
+                            menu.add(menuTitle).setOnMenuItemClickListener {
 
                                 val density = resources.displayMetrics.density
                                 val cssX = lastTouchX.floatValue / density
@@ -151,27 +159,64 @@ fun GeminiWebViewer(
 
                                 val js = """
                              (function() {
+                                 function extractSrc(mediaEl) {
+                                     if (!mediaEl) return null;
+                                     if (mediaEl.currentSrc) return mediaEl.currentSrc;
+                                     if (mediaEl.src) return mediaEl.src;
+                                     var source = mediaEl.querySelector('source');
+                                     return source ? (source.src || source.getAttribute('src')) : null;
+                                 }
+
                                  var el = document.elementFromPoint($cssX, $cssY);
-                                 // Walk up the tree in case we clicked a play button OVER the video
-                                 while (el && el.tagName !== 'VIDEO') {
-                                     el = el.parentElement;
+                                 if (!el) return null;
+
+                                 // 1. Walk up the parent tree looking for the target tag
+                                 var curr = el;
+                                 while (curr) {
+                                     if (curr.tagName === '$targetTag') {
+                                         var src = extractSrc(curr);
+                                         if (src) return src;
+                                     }
+                                     if ('$targetTag' === 'AUDIO' && curr.tagName === 'VIDEO') {
+                                         var src = extractSrc(curr);
+                                         if (src) return src;
+                                     }
+                                     curr = curr.parentElement;
                                  }
-                                 if (el && el.tagName === 'VIDEO') {
-                                     return el.currentSrc;
+
+                                 // 2. If clicked on a player container/wrapper, search descendants
+                                 curr = el;
+                                 var depth = 0;
+                                 while (curr && depth < 3) {
+                                     var child = curr.querySelector('$targetTag');
+                                     if (child) {
+                                         var src = extractSrc(child);
+                                         if (src) return src;
+                                     }
+                                     if ('$targetTag' === 'AUDIO') {
+                                         var vChild = curr.querySelector('video');
+                                         if (vChild) {
+                                             var src = extractSrc(vChild);
+                                             if (src) return src;
+                                         }
+                                     }
+                                     curr = curr.parentElement;
+                                     depth++;
                                  }
+
                                  return null;
                              })();
                          """.trimIndent()
 
                                 evaluateJavascript(js) { resultJs ->
-                                    val url = resultJs?.replace("\"", "")
+                                    val url = resultJs?.trim()?.removeSurrounding("\"")
 
-                                    if (!url.isNullOrEmpty() && (url != "null")) {
+                                    if (!url.isNullOrEmpty() && url != "null") {
                                         webViewManager.getDownloadListener(this).onDownloadStart(
                                             url,
                                             settings.userAgentString,
-                                            "video.mp4",
-                                            "video/mp4",
+                                            "attachment.$defaultExt",
+                                            defaultMime,
                                             0L
                                         )
                                     } else {
