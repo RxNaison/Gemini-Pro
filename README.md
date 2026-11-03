@@ -10,7 +10,8 @@ A lightweight WebView-based application for accessing **Google AI Studio** with 
 *   **Caffeine Mode**: Prevent the screen from turning off while you're deep in your workflow.
 *   **Media Downloads**:
     *   **Images**: Press and hold on any image to save it.
-    *   **Videos**: Enable **Video Selection Mode** from the menu, then long-press on a video to download it.
+    *   **Videos**: Enable **Video Selection Mode** from the menu, then tap and hold on a video to download it.
+    *   **Audio**: Enable **Audio Selection Mode** from the menu, then tap and hold on an audio element to download it.
 *   **Quick Access Tools**: Direct links to **Google Docs** and **Google Flow (Fx)** via the additional menu.
 *   **Navigation & Sharing**: Share the current page, copy links, and navigate forward/backward easily.
 *   **Customizable UI**: Choose between left or right side placement for the menu handle to suit your preference.
@@ -35,7 +36,7 @@ Once permissions are set, you can start using the app immediately.
 
 *   **Reload Page**: Drag down from the top center of the screen.
 *   **Open Additional Menu**: Drag the side handle (left or right).
-*   **Download Video**: Open the additional menu, tap **Download Video**, then long-press on a video element on the page.
+*   **Download Video / Audio**: Open the additional menu, tap **Download Video** or **Download Audio**, then tap and hold the media element on the page.
 
 > **Note:**
 The initial Google Drive permission step is required due to Google’s security policy, which cannot be bypassed in a custom WebView.
@@ -58,3 +59,13 @@ Change the run configuration to `app`.
 The `Debug` and `Release` build variants can be built and run.
 
 ![image](https://github.com/user-attachments/assets/99c8078d-37b7-45ce-a721-ede96289ee2e)
+
+# Security & Privacy
+
+Gemini Pro prioritizes user security and data privacy:
+* **Scoped Storage**: Blob and media downloads use Android's `MediaStore` without requiring broad storage permissions.
+* **Hardened Sandbox**: Local file access, cross-origin file URLs, and legacy web databases are strictly disabled within the WebView.
+* **Intent Validation**: External links and `intent://` schemes are sanitized to prevent launching unexported application components.
+
+For more details, see our [Security Policy](SECURITY.md) and full [Security Audit Report](docs/SECURITY_AUDIT.md).
+

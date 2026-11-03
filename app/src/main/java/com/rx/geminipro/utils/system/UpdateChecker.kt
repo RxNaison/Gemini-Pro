@@ -48,7 +48,7 @@ object UpdateChecker {
         return@withContext null
     }
 
-    private fun isNewer(remote: String, current: String): Boolean {
+    internal fun isNewer(remote: String, current: String): Boolean {
         val remoteParts = remote.split(".").map { it.toIntOrNull() ?: 0 }
         val currentParts = current.split(".").map { it.toIntOrNull() ?: 0 }
 
