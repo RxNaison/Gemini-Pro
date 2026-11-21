@@ -18,6 +18,18 @@ data class GeminiUiState(
     val updateInfo: UpdateInfo? = null
 )
 
+/** Flips video selection mode. Audio mode is always turned off, so at most one mode is active. */
+fun GeminiUiState.toggleVideoSelectionMode(): GeminiUiState = copy(
+    isVideoSelectionMode = !isVideoSelectionMode,
+    isAudioSelectionMode = false,
+)
+
+/** Flips audio selection mode. Video mode is always turned off, so at most one mode is active. */
+fun GeminiUiState.toggleAudioSelectionMode(): GeminiUiState = copy(
+    isAudioSelectionMode = !isAudioSelectionMode,
+    isVideoSelectionMode = false,
+)
+
 enum class ClipboardContentType { NONE, DIAGRAM, HTML }
 
 sealed interface GeminiUiEvent {

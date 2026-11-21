@@ -372,21 +372,35 @@ private fun BoxScope.MenuHandles(
 
 @Composable
 private fun rememberMenuItems(onEvent: (GeminiUiEvent) -> Unit, isMenuLeft: Boolean): List<MenuItemData> {
+    // stringResource can't be called inside remember, so resolve the labels first.
+    // A locale change recreates the activity, so keying remember on isMenuLeft alone is enough.
+    val openDocs = stringResource(R.string.menu_open_docs)
+    val caffeine = stringResource(R.string.menu_caffeine)
+    val googleFlow = stringResource(R.string.menu_google_flow)
+    val saveToFile = stringResource(R.string.menu_save_to_file)
+    val downloadVideo = stringResource(R.string.menu_download_video)
+    val downloadAudio = stringResource(R.string.menu_download_audio)
+    val sharePage = stringResource(R.string.menu_share_page)
+    val copyLink = stringResource(R.string.menu_copy_link)
+    val reloadPage = stringResource(R.string.menu_reload_page)
+    val goForward = stringResource(R.string.menu_go_forward)
+    val menuSide = stringResource(R.string.menu_side)
+
     return remember(isMenuLeft) {
         listOf(
-            MenuItemData(R.drawable.google_docs, "Open Docs") { onEvent(GeminiUiEvent.OpenDocsClicked) },
-            MenuItemData(R.drawable.coffee_cup, "Caffeine") { onEvent(GeminiUiEvent.KeepScreenOnToggled) },
-            MenuItemData(R.drawable.google_flow_icon, "Google Flow") { onEvent(GeminiUiEvent.OpenFlowClicked) },
-            MenuItemData(R.drawable.note_text, "Save To File") { onEvent(GeminiUiEvent.SaveToFileClicked) },
-            MenuItemData(R.drawable.baseline_save_alt_24, "Download Video") { onEvent(GeminiUiEvent.ToggleVideoSelectionMode) },
-            MenuItemData(R.drawable.baseline_save_alt_24, "Download Audio") { onEvent(GeminiUiEvent.ToggleAudioSelectionMode) },
-            MenuItemData(R.drawable.baseline_share_24, "Share Page") { onEvent(GeminiUiEvent.SharePageClicked) },
-            MenuItemData(R.drawable.baseline_link_24, "Copy Link") { onEvent(GeminiUiEvent.CopyLinkClicked) },
-            MenuItemData(R.drawable.baseline_replay_circle_filled_24, "Reload Page") { onEvent(GeminiUiEvent.ReloadPageClicked) },
-            MenuItemData(R.drawable.baseline_arrow_circle_right_24, "Go Forward") { onEvent(GeminiUiEvent.GoForwardClicked) },
+            MenuItemData(R.drawable.google_docs, openDocs) { onEvent(GeminiUiEvent.OpenDocsClicked) },
+            MenuItemData(R.drawable.coffee_cup, caffeine) { onEvent(GeminiUiEvent.KeepScreenOnToggled) },
+            MenuItemData(R.drawable.google_flow_icon, googleFlow) { onEvent(GeminiUiEvent.OpenFlowClicked) },
+            MenuItemData(R.drawable.note_text, saveToFile) { onEvent(GeminiUiEvent.SaveToFileClicked) },
+            MenuItemData(R.drawable.baseline_save_alt_24, downloadVideo) { onEvent(GeminiUiEvent.ToggleVideoSelectionMode) },
+            MenuItemData(R.drawable.baseline_save_alt_24, downloadAudio) { onEvent(GeminiUiEvent.ToggleAudioSelectionMode) },
+            MenuItemData(R.drawable.baseline_share_24, sharePage) { onEvent(GeminiUiEvent.SharePageClicked) },
+            MenuItemData(R.drawable.baseline_link_24, copyLink) { onEvent(GeminiUiEvent.CopyLinkClicked) },
+            MenuItemData(R.drawable.baseline_replay_circle_filled_24, reloadPage) { onEvent(GeminiUiEvent.ReloadPageClicked) },
+            MenuItemData(R.drawable.baseline_arrow_circle_right_24, goForward) { onEvent(GeminiUiEvent.GoForwardClicked) },
             MenuItemData(
                 painterResId = if (isMenuLeft) R.drawable.outline_arrow_menu_close_24 else R.drawable.outline_arrow_menu_open_24,
-                name = "Menu Side"
+                name = menuSide
             ) { onEvent(GeminiUiEvent.MenuPositionChanged(!isMenuLeft)) }
         )
     }

@@ -15,11 +15,13 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.MimeTypeMap
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.FileProvider
 import com.rx.geminipro.R
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 
 private const val TAG = "BlobDownloader"
 
@@ -42,28 +44,9 @@ class BlobDownloaderInterface(private val context: Context) {
             val filename = "geminipro_${System.currentTimeMillis()}.$extension"
 
             val targetUri: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-                    put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
-                }
-                val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
-                    ?: throw Exception("Could not create MediaStore entry in Downloads")
-                context.contentResolver.openOutputStream(uri)?.use { stream ->
-                    stream.write(decodedBytes)
-                } ?: throw Exception("Could not open output stream for MediaStore URI")
-                uri
+                saveToMediaStore(filename, mimeType, decodedBytes)
             } else {
-                val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                if (!downloadsDir.exists()) {
-                    val created = downloadsDir.mkdirs()
-                    if (!created && !downloadsDir.exists()) {
-                        throw Exception("Could not create Downloads directory")
-                    }
-                }
-                val file = File(downloadsDir, filename)
-                FileOutputStream(file).use { it.write(decodedBytes) }
-                FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
+                saveToLegacyDownloads(filename, decodedBytes)
             }
 
             Log.d(TAG, "File saved with URI: $targetUri")
@@ -77,9 +60,51 @@ class BlobDownloaderInterface(private val context: Context) {
         }
     }
 
-    @JavascriptInterface
-    fun jsLog(message: String) {
-        Log.d("WebViewJS", "JS Log: $message")
+    @RequiresApi(Build.VERSION_CODES.Q)
+    private fun saveToMediaStore(filename: String, mimeType: String, bytes: ByteArray): Uri {
+        val resolver = context.contentResolver
+        val contentValues = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+            put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+            // Keep the entry hidden from other apps until the write has finished.
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+            ?: throw IOException("Could not create MediaStore entry in Downloads")
+
+        try {
+            resolver.openOutputStream(uri)?.use { stream ->
+                stream.write(bytes)
+            } ?: throw IOException("Could not open output stream for MediaStore URI")
+
+            val published = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+            resolver.update(uri, published, null, null)
+        } catch (e: Exception) {
+            // Don't leave an empty or half-written file behind in Downloads.
+            resolver.delete(uri, null, null)
+            throw e
+        }
+        return uri
+    }
+
+    private fun saveToLegacyDownloads(filename: String, bytes: ByteArray): Uri {
+        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (!downloadsDir.exists()) {
+            val created = downloadsDir.mkdirs()
+            if (!created && !downloadsDir.exists()) {
+                throw IOException("Could not create Downloads directory")
+            }
+        }
+
+        val file = File(downloadsDir, filename)
+        try {
+            FileOutputStream(file).use { it.write(bytes) }
+        } catch (e: Exception) {
+            file.delete()
+            throw e
+        }
+        return FileProvider.getUriForFile(context, "${context.packageName}.provider", file)
     }
 
     private fun showToast(message: String) {

@@ -67,5 +67,3 @@ Gemini Pro prioritizes user security and data privacy:
 * **Hardened Sandbox**: Local file access, cross-origin file URLs, and legacy web databases are strictly disabled within the WebView.
 * **Intent Validation**: External links and `intent://` schemes are sanitized to prevent launching unexported application components.
 
-For more details, see our [Security Policy](SECURITY.md).
-

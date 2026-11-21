@@ -2,6 +2,8 @@ package com.rx.geminipro
 
 import com.rx.geminipro.viewmodels.ClipboardContentType
 import com.rx.geminipro.viewmodels.GeminiUiState
+import com.rx.geminipro.viewmodels.toggleAudioSelectionMode
+import com.rx.geminipro.viewmodels.toggleVideoSelectionMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -29,38 +31,66 @@ class GeminiContractTest {
     }
 
     @Test
-    fun toggleVideoSelectionMode_enablesVideoAndDisablesAudio() {
-        val initialState = GeminiUiState(isAudioSelectionMode = true)
-
-        val updated = initialState.copy(
-            isVideoSelectionMode = true,
-            isAudioSelectionMode = false
-        )
+    fun toggleVideoSelectionMode_whenIdle_enablesVideoOnly() {
+        val updated = GeminiUiState().toggleVideoSelectionMode()
 
         assertTrue(updated.isVideoSelectionMode)
         assertFalse(updated.isAudioSelectionMode)
     }
 
     @Test
-    fun toggleAudioSelectionMode_enablesAudioAndDisablesVideo() {
-        val initialState = GeminiUiState(isVideoSelectionMode = true)
+    fun toggleVideoSelectionMode_whileAudioActive_switchesToVideo() {
+        val updated = GeminiUiState(isAudioSelectionMode = true).toggleVideoSelectionMode()
 
-        val updated = initialState.copy(
-            isAudioSelectionMode = true,
-            isVideoSelectionMode = false
-        )
+        assertTrue(updated.isVideoSelectionMode)
+        assertFalse(updated.isAudioSelectionMode)
+    }
+
+    @Test
+    fun toggleVideoSelectionMode_twice_turnsVideoOff() {
+        val updated = GeminiUiState().toggleVideoSelectionMode().toggleVideoSelectionMode()
+
+        assertFalse(updated.isVideoSelectionMode)
+        assertFalse(updated.isAudioSelectionMode)
+    }
+
+    @Test
+    fun toggleAudioSelectionMode_whenIdle_enablesAudioOnly() {
+        val updated = GeminiUiState().toggleAudioSelectionMode()
 
         assertTrue(updated.isAudioSelectionMode)
         assertFalse(updated.isVideoSelectionMode)
     }
 
     @Test
-    fun stateCopy_updatesProgressAndReloading() {
-        val state = GeminiUiState()
+    fun toggleAudioSelectionMode_whileVideoActive_switchesToAudio() {
+        val updated = GeminiUiState(isVideoSelectionMode = true).toggleAudioSelectionMode()
 
-        val progressState = state.copy(loadingProgress = 65, isReloading = true)
+        assertTrue(updated.isAudioSelectionMode)
+        assertFalse(updated.isVideoSelectionMode)
+    }
 
-        assertEquals(65, progressState.loadingProgress)
-        assertTrue(progressState.isReloading)
+    @Test
+    fun toggleAudioSelectionMode_twice_turnsAudioOff() {
+        val updated = GeminiUiState().toggleAudioSelectionMode().toggleAudioSelectionMode()
+
+        assertFalse(updated.isAudioSelectionMode)
+        assertFalse(updated.isVideoSelectionMode)
+    }
+
+    @Test
+    fun toggleSelectionModes_leaveOtherStateUnchanged() {
+        val state = GeminiUiState(
+            isKeepScreenOn = true,
+            activeWebViewUrl = "https://aistudio.google.com",
+            loadingProgress = 65,
+        )
+
+        listOf(state.toggleVideoSelectionMode(), state.toggleAudioSelectionMode()).forEach { updated ->
+            assertEquals(
+                state,
+                updated.copy(isVideoSelectionMode = false, isAudioSelectionMode = false),
+            )
+        }
     }
 }

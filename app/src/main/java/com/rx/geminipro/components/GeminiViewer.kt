@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import com.rx.geminipro.R
 import com.rx.geminipro.utils.network.WebAppInterface
 import java.lang.ref.WeakReference
 
@@ -54,8 +55,11 @@ fun GeminiWebViewer(
     val lastTouchX = remember { mutableFloatStateOf(0f) }
     val lastTouchY = remember { mutableFloatStateOf(0f) }
 
-    val noVideoFoundText = stringResource(com.rx.geminipro.R.string.no_video_found)
-    val currentNoVideoFoundText by rememberUpdatedState(noVideoFoundText)
+    val noMediaFoundText = stringResource(R.string.no_media_found)
+    val currentNoMediaFoundText by rememberUpdatedState(noMediaFoundText)
+    val downloadVideoHereText by rememberUpdatedState(stringResource(R.string.download_video_here))
+    val downloadAudioHereText by rememberUpdatedState(stringResource(R.string.download_audio_here))
+    val saveImageText by rememberUpdatedState(stringResource(R.string.save_image))
 
     val webViewManager = remember(context, activity) {
         WebViewManager(context, WeakReference(activity)).apply {
@@ -147,7 +151,7 @@ fun GeminiWebViewer(
 
                         if (currentVideoMode || currentAudioMode) {
                             val targetTag = if (currentAudioMode) "AUDIO" else "VIDEO"
-                            val menuTitle = if (currentAudioMode) "Download Audio Here" else "Download Video Here"
+                            val menuTitle = if (currentAudioMode) downloadAudioHereText else downloadVideoHereText
                             val defaultExt = if (currentAudioMode) "mp3" else "mp4"
                             val defaultMime = if (currentAudioMode) "audio/mpeg" else "video/mp4"
 
@@ -222,7 +226,7 @@ fun GeminiWebViewer(
                                     } else {
                                         Toast.makeText(
                                             context,
-                                            currentNoVideoFoundText,
+                                            currentNoMediaFoundText,
                                             Toast.LENGTH_SHORT,
                                         ).show()
                                     }
@@ -237,7 +241,7 @@ fun GeminiWebViewer(
                                 val imageUrl = result.extra
 
                                 if (imageUrl != null) {
-                                    menu.add("Save Image").setOnMenuItemClickListener {
+                                    menu.add(saveImageText).setOnMenuItemClickListener {
                                         webViewManager.getDownloadListener(this).onDownloadStart(
                                             imageUrl,
                                             settings.userAgentString,

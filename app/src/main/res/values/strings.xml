@@ -10,7 +10,25 @@
     <string name="preview_html">Preview HTML</string>
     <string name="tap_and_hold_video">Tap and hold the video to download it</string>
     <string name="tap_and_hold_audio">Tap and hold the audio to download it</string>
-    <string name="no_video_found">No media found at this location</string>
+    <string name="no_media_found">No media found at this location</string>
     <string name="link_copied">Link copied!</string>
     <string name="no_url_to_copy">No URL to copy.</string>
+
+    <!-- WebView long-press menu -->
+    <string name="download_video_here">Download Video Here</string>
+    <string name="download_audio_here">Download Audio Here</string>
+    <string name="save_image">Save Image</string>
+
+    <!-- Additional menu -->
+    <string name="menu_open_docs">Open Docs</string>
+    <string name="menu_caffeine">Caffeine</string>
+    <string name="menu_google_flow" translatable="false">Google Flow</string>
+    <string name="menu_save_to_file">Save To File</string>
+    <string name="menu_download_video">Download Video</string>
+    <string name="menu_download_audio">Download Audio</string>
+    <string name="menu_share_page">Share Page</string>
+    <string name="menu_copy_link">Copy Link</string>
+    <string name="menu_reload_page">Reload Page</string>
+    <string name="menu_go_forward">Go Forward</string>
+    <string name="menu_side">Menu Side</string>
 </resources>

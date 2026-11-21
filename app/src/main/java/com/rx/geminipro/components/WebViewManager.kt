@@ -29,6 +29,7 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import com.rx.geminipro.BuildConfig
 import com.rx.geminipro.utils.network.BlobDownloaderInterface
 import java.io.File
 import java.lang.ref.WeakReference
@@ -111,7 +112,11 @@ class WebViewManager(
         private var onBackPressedCallback: OnBackPressedCallback? = null
 
         override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
-            Log.d("WebViewConsole", "[${consoleMessage?.messageLevel()}] ${consoleMessage?.message()} -- From line ${consoleMessage?.lineNumber()} of ${consoleMessage?.sourceId()}")
+            // Page console output can contain user content, so it only goes to logcat in debug builds.
+            // Returning true also stops WebView from logging it on its own in release builds.
+            if (BuildConfig.DEBUG && consoleMessage != null) {
+                Log.d("WebViewConsole", "[${consoleMessage.messageLevel()}] ${consoleMessage.message()} -- From line ${consoleMessage.lineNumber()} of ${consoleMessage.sourceId()}")
+            }
             return true
         }
 
@@ -240,9 +245,6 @@ class WebViewManager(
                     val jsScript = """
                         (async function() {
                             function log(msg) {
-                                if (window.AndroidBlob && window.AndroidBlob.jsLog) {
-                                    window.AndroidBlob.jsLog(msg);
-                                }
                                 console.log("GeminiPro: " + msg);
                             }
 
