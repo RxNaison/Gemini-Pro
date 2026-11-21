@@ -39,10 +39,8 @@ To help us triage and resolve the issue quickly, please include:
 
 Gemini Pro adheres to modern Android security and privacy standards:
 
-* **WebView Hardening**: `allowFileAccess`, `allowFileAccessFromFileURLs`, and `allowUniversalAccessFromFileURLs` are strictly disabled. Deprecated web database flags are removed.
+* **WebView Hardening**: `allowFileAccess` and `allowContentAccess` are disabled, and `allowFileAccessFromFileURLs` / `allowUniversalAccessFromFileURLs` stay at their secure defaults. Deprecated web database flags are removed.
 * **Scoped Storage Compliance**: File downloads utilize `MediaStore.Downloads` on Android 10+ (API 29+), eliminating legacy storage permissions and isolating media downloads within Android's system storage framework.
 * **Intent Sanitization**: Deep-links and `intent://` scheme URLs are sanitized with `Intent.CATEGORY_BROWSABLE`, with component and selector nullification to prevent unauthorized IPC or redirection to internal app components.
-* **JavaScript Bridge Protection**: All `@JavascriptInterface` bridges enforce rigorous payload validation, error isolation, and string escaping (`JSONObject.quote`) to prevent script injection and IPC crashes.
+* **JavaScript Bridge Protection**: Values injected into page scripts are escaped with `JSONObject.quote`, and `@JavascriptInterface` methods null-check their inputs and catch errors so malformed payloads cannot crash the app.
 * **Component Exposure**: Only `MainActivity` is exported (as required for the app launcher). All other components and internal `FileProvider` paths are unexported (`android:exported="false"`).
-
-For a detailed technical evaluation and vulnerability assessment, please refer to our [Security Audit Report](docs/SECURITY_AUDIT.md).
