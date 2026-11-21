@@ -40,3 +40,8 @@ captures/
 
 # Kotlin
 .kotlin
+
+# Release and artifact directories
+.artifacts/
+app/release/
+release/

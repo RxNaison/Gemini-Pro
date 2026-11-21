@@ -110,6 +110,11 @@ class WebViewManager(
         private var fullscreenContainer: FrameLayout? = null
         private var onBackPressedCallback: OnBackPressedCallback? = null
 
+        override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage?): Boolean {
+            Log.d("WebViewConsole", "[${consoleMessage?.messageLevel()}] ${consoleMessage?.message()} -- From line ${consoleMessage?.lineNumber()} of ${consoleMessage?.sourceId()}")
+            return true
+        }
+
         override fun onShowFileChooser(
             webView: WebView,
             filePathCallback: ValueCallback<Array<Uri>>,
@@ -227,27 +232,63 @@ class WebViewManager(
 
     fun getDownloadListener(webView: WebView): DownloadListener {
         return DownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+            Log.d(TAG, "Download listener triggered for: $url")
             when {
                 url.startsWith("blob:") -> {
+                    val quotedUrl = org.json.JSONObject.quote(url)
+                    val quotedMime = org.json.JSONObject.quote(mimeType ?: "")
                     val jsScript = """
-                        (function() {
-                            var xhr = new XMLHttpRequest();
-                            xhr.open('GET', '$url', true);
-                            xhr.responseType = 'blob';
-                            xhr.onload = function(e) {
-                                if (this.status == 200) {
-                                    var blob = this.response;
-                                    var reader = new FileReader();
-                                    reader.readAsDataURL(blob);
-                                    reader.onloadend = function() {
-                                        var base64data = reader.result;
-                                        // Call the Android Interface
-                                        // 'AndroidBlob' is the name we will register in the next step
-                                        AndroidBlob.processBlobData(base64data, blob.type);
-                                    }
+                        (async function() {
+                            function log(msg) {
+                                if (window.AndroidBlob && window.AndroidBlob.jsLog) {
+                                    window.AndroidBlob.jsLog(msg);
                                 }
-                            };
-                            xhr.send();
+                                console.log("GeminiPro: " + msg);
+                            }
+
+                            const targetUrl = $quotedUrl;
+                            const fallbackMime = $quotedMime;
+                            log("Starting extraction for " + targetUrl);
+                            try {
+                                const response = await fetch(targetUrl);
+                                const blob = await response.blob();
+                                log("Blob fetched, size: " + blob.size + ", type: " + blob.type);
+                                
+                                const reader = new FileReader();
+                                reader.onloadend = function() {
+                                    if (reader.result && window.AndroidBlob) {
+                                        log("Data converted to Base64, length: " + reader.result.length);
+                                        AndroidBlob.processBlobData(reader.result, blob.type || fallbackMime);
+                                    }
+                                };
+                                reader.readAsDataURL(blob);
+                            } catch (err) {
+                                log("Fetch error: " + err.message);
+                                log("Trying XHR fallback...");
+                                try {
+                                    var xhr = new XMLHttpRequest();
+                                    xhr.open('GET', targetUrl, true);
+                                    xhr.responseType = 'blob';
+                                    xhr.onload = function() {
+                                        if (this.status === 200) {
+                                            const blob = this.response;
+                                            const reader = new FileReader();
+                                            reader.onloadend = function() {
+                                                if (reader.result && window.AndroidBlob) {
+                                                    AndroidBlob.processBlobData(reader.result, blob.type || fallbackMime);
+                                                }
+                                            };
+                                            reader.readAsDataURL(blob);
+                                        } else {
+                                            log("XHR failed with status: " + this.status);
+                                        }
+                                    };
+                                    xhr.onerror = function() { log("XHR error"); };
+                                    xhr.send();
+                                } catch (e2) {
+                                    log("Fallback failed: " + e2.message);
+                                }
+                            }
                         })();
                     """.trimIndent()
 
@@ -270,11 +311,17 @@ class WebViewManager(
     private fun handleIntentUrl(url: String, webView: WebView): Boolean {
         try {
             val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+
+            // Sanitize intent to prevent launching internal unexported components or selectors
+            intent.addCategory(Intent.CATEGORY_BROWSABLE)
+            intent.component = null
+            intent.selector = null
+
             val fallbackUrl = intent.getStringExtra("browser_fallback_url")
 
             if (intent.resolveActivity(context.packageManager) != null) {
                 onStartActivity(intent)
-            } else if (fallbackUrl != null) {
+            } else if (fallbackUrl != null && (fallbackUrl.startsWith("http://") || fallbackUrl.startsWith("https://"))) {
                 webView.loadUrl(fallbackUrl, spoofHeaders)
             } else {
                 onShowToast("Cannot handle this type of link.")
